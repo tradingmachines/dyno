@@ -1,0 +1,2 @@
+# dyno
+Strategy backtesting framework
