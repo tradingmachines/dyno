@@ -1,6 +1,6 @@
 repository:
   name: "dyno"
-  description: "Strategy backtesting framework"
+  description: "Strategy backtesting framework built on Pyspark"
   private: true
   has_issues: true
   has_projects: false

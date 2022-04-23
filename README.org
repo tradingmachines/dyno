@@ -1,0 +1,21 @@
+#+TITLE:  dyno
+#+AUTHOR: William Santos
+#+EMAIL:  w@wsantos.net
+
+#+ID:               dyno
+#+LANGUAGE:         en
+#+STARTUP:          showall
+#+EXPORT_FILE_NAME: dyno
+
+
+Strategy backtesting framework built on Pyspark
+
+
+** examples
+...
+
+** library
+...
+
+** running tests
+...
