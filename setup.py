@@ -18,4 +18,5 @@ setup(
 
     # dependencies
     install_requires=[
-        "pyspark == 3.2.1"])
+        "pyspark == 3.2.1",
+        "tqdm == 4.47.0"])

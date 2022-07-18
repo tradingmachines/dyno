@@ -1,6 +1,8 @@
 import time
 import functools
 
+from tqdm import tqdm
+
 from strategy import DataEngineeringStrategy
 from strategy import SignalStrategy
 from strategy import RiskStrategy
@@ -149,39 +151,40 @@ class Pipeline:
     def __init__(self, *stages):
         self._stages = stages
 
-    def event(self, event):
+    def event(self, inputs):
         """ ...
         """
         foldl = lambda f, acc, xs: functools.reduce(func, xs, acc)
-        do_stage = lambda stage, acc: stage.event(acc)
-        state = foldl(do_stage, self._stages, event)
-        return state
+        do_stage = lambda stage, acc: stage(acc)
+        final_output = foldl(do_stage, self._stages, inputs)
+        return final_output
 
 
 class Backtest:
     """ ...
     """
-    def __init__(self,
-                 events,
-                 pipeline=Pipeline(
-                     DataEngineeringStrategy,
-                     SignalStrategy,
-                     RiskStrategy,
-                     ExecutionStrategy)):
-
+    def __init__(self, events, pipeline):
         self._events = events
         self._pipeline = pipeline
 
     def __iter__(self):
         return map(self._pipeline.event, self._events.as_generator())
 
-    def execute(self):
+    def execute(self, progress_bar=False):
         """ ...
         """
         start_ts_ns = time.time_ns()
-        states = [state for state in self]
+
+        if progress_bar:
+            count = sum([1 for _ in self._events.as_generator()])
+            iterator = tqdm(self, total=count, desc="Events")
+
+        else:
+            iterator = seld
+
+        states = [state for state in iterator]
         end_ts_ns = time.time_ns()
-        return Results(start, end, states)
+        return Results(start_ts_ns, end_ts_ns, states)
 
 
 class Ensemble:
