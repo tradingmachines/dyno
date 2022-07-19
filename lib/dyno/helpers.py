@@ -2,8 +2,9 @@ import exchange
 import strategy
 
 
-# spot only
 def spot_market_cryptocurrency_exchanges():
+    """ ...
+    """
     return {
         "BINANCE": exchanges.Binance(),
         "BITFINEX": exchanges.Bitfinex(),
@@ -20,8 +21,9 @@ def spot_market_cryptocurrency_exchanges():
     }
 
 
-# futures only
 def futures_market_cryptocurrency_exchanges():
+    """ ...
+    """
     return {
         "BINANCE": exchanges.Binance(),
         "BITFINEX": exchanges.Bitfinex(),
@@ -33,18 +35,21 @@ def futures_market_cryptocurrency_exchanges():
     }
 
 
-# spot + futures
 def all_cryptocurrency_exchanges():
+    """ ...
+    """
     return {
         **spot_market_cryptocurrency_exchanges(),
         **futures_market_cryptocurrency_exchanges()
     }
 
 
-def basic_signal_strategy(TheSignalStrategy, exchanges):
+def basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
     """ ...
     """
-    return Pipeline(FeatureEngineeringStrategy(),
-                    TheSignalStrategy(),
-                    BasicRiskStrategy(exchanges),
-                    BasicExecutionStrategy(exchanges))
+    return Pipeline(strategy.FeatureEngineeringStrategy(),
+                    UserDefinedSignalStrategy(),
+                    strategy.RiskStrategy(exchanges),
+                    strategy.EntryStrategy(exchanges),
+                    strategy.PositionStrategy(),
+                    strategy.ExitStrategy(exchanges))
