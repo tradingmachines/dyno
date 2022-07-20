@@ -47,9 +47,9 @@ def all_cryptocurrency_exchanges():
 def basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
     """ ...
     """
-    return Pipeline(strategy.FeatureEngineeringStrategy(),
-                    UserDefinedSignalStrategy(),
+    return Pipeline(strategy.DataStrategy(exchanges),
+                    UserDefinedSignalStrategy(exchanges),
                     strategy.RiskStrategy(exchanges),
                     strategy.EntryStrategy(exchanges),
-                    strategy.PositionStrategy(),
+                    strategy.PositionStrategy(exchanges),
                     strategy.ExitStrategy(exchanges))

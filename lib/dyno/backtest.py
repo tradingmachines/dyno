@@ -154,9 +154,13 @@ class Pipeline:
     def event(self, inputs):
         """ ...
         """
+        # ...
         foldl = lambda f, acc, xs: functools.reduce(func, xs, acc)
         do_stage = lambda stage, acc: stage(acc)
+
+        # ...
         final_output = foldl(do_stage, self._stages, inputs)
+
         return final_output
 
 
@@ -173,17 +177,22 @@ class Backtest:
     def execute(self, progress_bar=False):
         """ ...
         """
+        # ...
         start_ts_ns = time.time_ns()
 
         if progress_bar:
+            # ...
             count = sum([1 for _ in self._events.as_generator()])
             iterator = tqdm(self, total=count, desc="Events")
 
         else:
-            iterator = seld
+            # ...
+            iterator = self
 
+        # ...
         states = [state for state in iterator]
         end_ts_ns = time.time_ns()
+
         return Results(start_ts_ns, end_ts_ns, states)
 
 
