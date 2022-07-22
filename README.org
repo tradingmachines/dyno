@@ -8,7 +8,7 @@
 #+EXPORT_FILE_NAME: dyno
 
 
-Backtesting framework for High-frequency trading strategies
+Backtesting framework for high-frequency trading strategies
 
 
 ** examples
