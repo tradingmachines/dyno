@@ -67,17 +67,22 @@ class Results:
     def plot_summary(self):
         """ ...
         """
-        return
+        pass
 
     def plot_equity_curve(self):
         """ ...
         """
-        return
+        pass
+
+    def plot_draw_down(self):
+        """ ...
+        """
+        pass
 
     def plot_returns(self):
         """ ...
         """
-        return
+        pass
 
     def backtest_timings(self):
         """ ...

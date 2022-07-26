@@ -26,6 +26,12 @@ class Strategy:
 
         return all_outputs
 
+    def on_best_bid(self, value):
+        return [("best_bid", value)]
+
+    def on_best_ask(self, value):
+        return [("best_ask", value)]
+
 
 class DataStrategy(Strategy):
     """ ...
@@ -47,10 +53,12 @@ class DataStrategy(Strategy):
 
             if curr != None and prev != None:
                 # ...
-                lin = (curr - prev) / prev
-                log = math.ln(curr / prev)
                 return output + [
-                    ("price_returns", (market_id, lin, log))
+                    ("mid_market_price_returns", {
+                        "market_id": market_id,
+                        "lin": (curr - prev) / prev,
+                        "log": math.ln(curr / prev)
+                    })
                 ]
 
             else:
@@ -80,8 +88,12 @@ class DataStrategy(Strategy):
                 self._prev_mid_market_prices[market_id] = curr
                 self._curr_mid_market_prices[market_id] = midm
 
+                # ...
                 return output + [
-                    ("mid_market_price", (market_id, midm))
+                    ("mid_market_price", {
+                        "market_id": market_id,
+                        "mid_market_price": midm
+                    })
                 ]
 
             else:
@@ -91,7 +103,7 @@ class DataStrategy(Strategy):
         return recompute
 
     @mid_market_price
-    def on_best_bid_price(self, value):
+    def on_best_bid(self, value):
         exchange = self._exchanges[value["exchange_name"]]
 
         # ...
@@ -99,11 +111,11 @@ class DataStrategy(Strategy):
                               value["price"],
                               value["liquidity"])
 
-        return []
+        return super().on_best_bid(value)
 
 
     @mid_market_price
-    def on_best_ask_price(self, value):
+    def on_best_ask(self, value):
         exchange = self._exchanges[value["exchange_name"]]
 
         # ...
@@ -111,15 +123,27 @@ class DataStrategy(Strategy):
                               value["price"],
                               value["liquidity"])
 
-        return []
+        return super().on_best_ask(value)
 
 
 class RiskStrategy(Strategy):
     """ ...
     """
-    def __init__(self, exchanges, threshold=0.2):
-        super().__init__(exchanges)
-        self._threshold = threshold
+    @staticmethod
+    def kelly_fraction(confidence, negative, positive):
+        """ ...
+
+        https://en.wikipedia.org/wiki/Kelly_criterion#Investment_formula
+        """
+        # ...
+        p = confidence
+        q = 1 - p
+        a = negative
+        b = positive
+
+        # ...
+        f = (p / a) - (q / b)
+        return f / 100
 
     def if_sufficient_balance(func):
         def determine(self, value):
@@ -137,44 +161,56 @@ class RiskStrategy(Strategy):
 
         return determine
 
-    def if_below_threshold(func):
+    def if_above_minimum_trade_size(func):
         def determine(self, value):
-            # ...
-            exchange = self._exchanges[value["exchange_name"]]
-            balance = exchange.get_balance(value["quote_currency"])
-            open_positions = []
 
-            if sum(open_positions) < balance * self._threshold:
-                # ...
-                return func(value)
-            else:
-                # ...
-                return []
+            # do work here
+            # ...
+
+            return []
 
         return determine
 
     @if_sufficient_balance
-    @if_below_threshold
+    @if_above_minimum_trade_size
     def on_long(self, value):
         # ...
-        market_id = value["market_id"]
-        exchange_name = value["exchange_name"]
-        price, amount = value["price"], value["amount"]
+        balance = 0
+        fraction = kelly_fraction(
+            value["confidence"],
+            value["stop_loss"],
+            value["take_profit"]
+        )
 
+        # ...
         return [
-            ("take_from_asks", (exchange_name, market_id, price, amount))
+            ("take_from_asks", {
+                "market_id": value["market_id"],
+                "exchange_name": value["exchange_name"],
+                "price": value["price"],
+                "amount": balance * fraction
+            })
         ]
 
     @if_sufficient_balance
-    @if_below_threshold
+    @if_above_minimum_trade_size
     def on_short(self, value):
         # ...
-        market_id = value["market_id"]
-        exchange_name = value["exchange_name"]
-        price, amount = value["price"], value["amount"]
+        balance = 0
+        fraction = kelly_fraction(
+            value["confidence"],
+            value["stop_loss"],
+            value["take_profit"]
+        )
 
+        # ...
         return [
-            ("take_from_bids", (exchange_name, market_id, price, amount))
+            ("take_from_asks", {
+                "market_id": value["market_id"],
+                "exchange_name": value["exchange_name"],
+                "price": value["price"],
+                "amount": balance * fraction
+            })
         ]
 
 
@@ -183,59 +219,61 @@ class ExecutionStrategy(Strategy):
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
-        self._queue = []
+        self._bid_queue = []
+        self._ask_queue = []
 
-    def trigger_queued_orders(func):
-        def execute(self, value):
-
-            # do work here
+    def trigger_bid_matches(func):
+        def match(self, value):
             output = func(self, value)
 
-            return
+            # ...
 
-        return execute
+            return output + []
 
-    @trigger_queued_orders
-    def on_mid_market_price(self, value):
-        return [
-            ("mid_market_price", value)
-        ]
+        return match
+
+    def trigger_ask_matches(func):
+        def match(self, value):
+            output = func(self, value)
+
+            # ...
+
+            return output + []
+
+        return match
+
+    @trigger_bid_matches
+    def on_best_bid_price(self, value):
+        return super().on_best_bid_price(value)
+
+    @trigger_ask_matches
+    def on_best_ask_price(self, value):
+        return super().on_best_ask_price(value)
 
 
 class EntryStrategy(ExecutionStrategy):
     """ ...
     """
-    def __init__(self, exchanges):
-        super().__init__(exchanges)
-
-    @trigger_queued_orders
+    @trigger_bid_matches
     def on_take_from_bids(self, value):
         # ...
-        market_id, price, amount = value
-
-        # ...
-        self._queue.append({
-            "side": "bids",
-            "op": "take",
-            "market_id": market_id,
-            "price": price,
-            "remaining": amount
+        self._bid_queue.append({
+            "market_id": value["market_id"],
+            "exchange_name": value["exchange_name"],
+            "price": value["price"],
+            "remaining": value["amount"]
         })
 
         return []
 
-    @trigger_queued_orders
+    @trigger_ask_matches
     def on_take_from_asks(self, value):
         # ...
-        market_id, price, amount = value
-
-        # ...
-        self._queue.append({
-            "side": "asks",
-            "op": "take",
-            "market_id": market_id,
-            "price": price,
-            "remaining": amount
+        self._ask_queue.append({
+            "market_id": value["market_id"],
+            "exchange_name": value["exchange_name"],
+            "price": value["price"],
+            "remaining": value["amount"]
         })
 
         return []
@@ -244,44 +282,48 @@ class EntryStrategy(ExecutionStrategy):
 class PositionStrategy(Strategy):
     """ ...
     """
-    def __init__(self, exchanges):
-        super().__init__(exchanges)
+    def check_positions(func):
+        def check(self, value):
+            output = func(self, value)
+
+            # ...
+
+            return output + []
+
+        return check
+
+    @check_positions
+    def on_best_bid_price(self, value):
+        return super().on_best_bid_price(value)
+
+    @check_positions
+    def on_best_ask_price(self, value):
+        return super().on_best_ask_price(value)
 
 
 class ExitStrategy(ExecutionStrategy):
     """ ...
     """
-    def __init__(self, exchanges):
-        super().__init__(exchanges)
-
-    @trigger_queued_orders
+    @trigger_bid_matches
     def on_give_to_bids(self, value):
         # ...
-        market_id, price, amount = value
-        
-        # ...
-        self._queue.append({
-            "side": "bids",
-            "op": "give",
-            "market_id": market_id,
-            "price": price,
-            "remaining": amount
+        self._bid_queue.append({
+            "market_id": value["market_id"],
+            "exchange_name": value["exchange_name"],
+            "price": value["price"],
+            "remaining": value["amount"]
         })
 
         return []
 
-    @trigger_queued_orders
+    @trigger_ask_matches
     def on_give_to_asks(self, value):
         # ...
-        market_id, price, amount = value
-        
-        # ...
-        self._queue.append({
-            "side": "asks",
-            "op": "give",
-            "market_id": market_id,
-            "price": price,
-            "remaining": amount
+        self._ask_queue.append({
+            "market_id": value["market_id"],
+            "exchange_name": value["exchange_name"],
+            "price": value["price"],
+            "remaining": value["amount"]
         })
 
         return []
