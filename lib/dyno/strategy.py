@@ -75,7 +75,6 @@ class DataStrategy(Strategy):
 
         return recompute
 
-    @mid_market_price_returns
     def mid_market_price(func):
         def recompute(self, value):
             # call the decorated function
@@ -119,6 +118,7 @@ class DataStrategy(Strategy):
         return recompute
 
     @mid_market_price
+    @mid_market_price_returns
     def on_best_bid(self, value):
         exchange = self._exchanges[value["exchange_name"]]
 
@@ -132,6 +132,7 @@ class DataStrategy(Strategy):
 
 
     @mid_market_price
+    @mid_market_price_returns
     def on_best_ask(self, value):
         exchange = self._exchanges[value["exchange_name"]]
 

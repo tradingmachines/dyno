@@ -1,5 +1,7 @@
 import unittest
 
+from dyno import Strategy
+
 
 class TestSignalStrategy(Strategy):
     """ ...

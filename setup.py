@@ -12,9 +12,7 @@ setup(
 
     # publicly accessible packages
     package_dir={"": "lib"},
-    packages=[
-        # expose back testing api
-        "dyno.backtest"],
+    packages=["dyno"],
 
     # dependencies
     install_requires=[

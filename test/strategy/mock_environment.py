@@ -1,11 +1,16 @@
 import unittest
 
 
-class ClientTest(unittest.TestCase):
+class TestExchange:
+    def __init__(self):
+        pass
+
+
+class StrategyTest(unittest.TestCase):
     """ ...
     """
     def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
+        self._exchanges = {
+            "TEST EXCHANGE 1": TestExchange(),
+            "TEST EXCHANGE 2": TestExchange()
+        }
