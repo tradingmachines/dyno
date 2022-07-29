@@ -1,34 +1,25 @@
 import unittest
 
+from dyno.exchange import Exchange, StaticFeeSchedule
 
-class TestExchange:
+
+class TestExchange1(Exchange):
+    """ ...
+    """
     def __init__(self):
-        pass
+        super().__init__("EXCHANGE 1", StaticFeeSchedule(0.01))
 
-    def set_best_bid(self, market_id, price, liquidity):
-        pass
 
-    def set_best_ask(self, market_id, price, liquidity):
-        pass
-
-    def get_best_bid(self, market_id):
-        return 0, 0
-
-    def get_best_ask(self, market_id):
-        return 0, 0
-
-    def get_best_bid_price(self, market_id):
-        return 0
-
-    def get_best_ask_price(self, market_id):
-        return 0
+class TestExchange2(Exchange):
+    """ ...
+    """
+    def __init__(self):
+        super().__init__("EXCHANGE 2", StaticFeeSchedule(0.05))
 
 
 class StrategyTest(unittest.TestCase):
     """ ...
     """
     def setUp(self):
-        self._exchanges = {
-            "TEST EXCHANGE 1": TestExchange(),
-            "TEST EXCHANGE 2": TestExchange()
-        }
+        self._exchanges = {"EXCHANGE 1": TestExchange1(),
+                           "EXCHANGE 2": TestExchange2()}

@@ -117,6 +117,18 @@ class Exchange:
     def __str__(self):
         return self._name
 
+    def create_order_book_if_not_exists(func):
+        def check_order_book(self, market_id, price, liquidity):
+            # create the order book object for the given market id
+            # if it does not clready exist
+            if market_id not in self._order_books:
+                self._order_books[market_id] = OrderBook()
+
+            # call and return the decorated function
+            return func(self, market_id, price, liquidity)
+
+        return check_order_book
+
     def get_best_bid_price(self, market_id):
         """ ...
         """
@@ -128,22 +140,6 @@ class Exchange:
         """
         book = self._order_books[market_id]
         return book.get_best_ask_price()
-
-    def set_best_bid(self, market_id, price, liquidity):
-        """ ...
-        """
-        if market_id not in self._order_books:
-            self._order_books[market_id] = OrderBook()
-
-        self._order_books[market_id].set_best_bid(price, liquidity)
-
-    def set_best_ask(self, market_id, price, liquidity):
-        """ ...
-        """
-        if market_id not in self._order_books:
-            self._order_books[market_id] = OrderBook()
-
-        self._order_books[market_id].set_best_ask(price, liquidity)
 
     def open_long(self, price, size):
         """ ...
@@ -160,86 +156,98 @@ class Exchange:
         
         return
 
+    @create_order_book_if_not_exists
+    def set_best_bid(self, market_id, price, liquidity):
+        """ ...
+        """
+        self._order_books[market_id].set_best_bid(price, liquidity)
+
+    @create_order_book_if_not_exists
+    def set_best_ask(self, market_id, price, liquidity):
+        """ ...
+        """
+        self._order_books[market_id].set_best_ask(price, liquidity)
+
 
 class Binance(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Binance", something)
+        super().__init__("Binance", StaticFeeSchedule(0.01))
 
 
 class Bitfinex(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bitfinex", something)
+        super().__init__("Bitfinex", StaticFeeSchedule(0.01))
 
 
 class Bitflyer(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bitflyer", something)
+        super().__init__("Bitflyer", StaticFeeSchedule(0.01))
 
 
 class BitMEX(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("BitMEX", something)
+        super().__init__("BitMEX", StaticFeeSchedule(0.01))
 
 
 class Bitstamp(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bitstamp", something)
+        super().__init__("Bitstamp", StaticFeeSchedule(0.01))
 
 
 class Bybit(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bybit", something)
+        super().__init__("Bybit", StaticFeeSchedule(0.01))
 
 
 class Coinbase(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Coinbase", something)
+        super().__init__("Coinbase", StaticFeeSchedule(0.01))
 
 
 class FTX(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("FTX", something)
+        super().__init__("FTX", StaticFeeSchedule(0.01))
 
 
 class Gemini(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Gemini", something)
+        super().__init__("Gemini", StaticFeeSchedule(0.01))
 
 
 class HitBTC(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("HitBTC", something)
+        super().__init__("HitBTC", StaticFeeSchedule(0.01))
 
 
 class Kraken(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Kraken", something)
+        super().__init__("Kraken", StaticFeeSchedule(0.01))
 
 
 class Poloniex(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Poloniex", something)
+        super().__init__("Poloniex", StaticFeeSchedule(0.01))

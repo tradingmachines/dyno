@@ -52,9 +52,17 @@ class DataStrategy(Strategy):
             exchange_name = value["exchange_name"]
             market_id = value["market_id"]
 
-            # get current and previous mid market prices
-            curr = self._curr_mid_market_prices[market_id]
-            prev = self._prev_mid_market_prices[market_id]
+            # get current mid market price
+            if market_id in self._curr_mid_market_prices:
+                curr = self._curr_mid_market_prices[market_id]
+            else:
+                curr = None
+
+            # get previous mid market price
+            if market_id in self._prev_mid_market_prices:
+                prev = self._prev_mid_market_prices[market_id]
+            else:
+                prev = None
 
             if curr != None and prev != None:
                 # return output of decorated function + mid market
@@ -64,7 +72,7 @@ class DataStrategy(Strategy):
                         "market_id": market_id,
                         "exchange_name": exchange_name,
                         "lin": (curr - prev) / prev,
-                        "log": math.ln(curr / prev)
+                        "log": math.log(curr / prev)
                     })
                 ]
 
@@ -92,9 +100,14 @@ class DataStrategy(Strategy):
             ask_price = exchange.get_best_ask_price(market_id)
 
             if bid_price != None and ask_price != None:
-                # calculate mid market price
+                # calculate new mid market price
                 midm = (bid_price + ask_price) / 2
-                curr = self._curr_mid_market_prices[market_id]
+
+                # get current mid market price
+                if market_id in self._curr_mid_market_prices:
+                    curr = self._curr_mid_market_prices[market_id]
+                else:
+                    curr = None
 
                 # update current mid market price
                 self._prev_mid_market_prices[market_id] = curr
