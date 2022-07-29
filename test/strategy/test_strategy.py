@@ -15,9 +15,13 @@ class TestBaseStrategy(StrategyTest):
     def test_1(self):
         s = Strategy(self._exchanges)
 
-        print(s)
+        bid = ("best_bid", 123)
+        ask = ("best_ask", 456)
+        something = ("something", 789)
 
-        # ...
+        self.assertTrue(s([bid]), [bid])
+        self.assertTrue(s([ask]), [ask])
+        self.assertTrue(s([something]), [something])
 
 
 class TestDataStrategy(StrategyTest):
@@ -26,9 +30,22 @@ class TestDataStrategy(StrategyTest):
     def test_1(self):
         s = DataStrategy(self._exchanges)
 
-        print(s)
+        bid = ("best_bid", {
+            "exchange_name": "TEST EXCHANGE 1",
+            "market_id": 1,
+            "price": 123,
+            "liquidity": 100
+        })
 
-        # ...
+        ask = ("best_ask", {
+            "exchange_name": "TEST EXCHANGE 1",
+            "market_id": 1,
+            "price": 123,
+            "liquidity": 100
+        })
+
+        print(s([bid]))
+        print(s([ask]))
 
 
 class TestRiskStrategy(StrategyTest):
@@ -36,8 +53,6 @@ class TestRiskStrategy(StrategyTest):
     """
     def test_1(self):
         s = RiskStrategy(self._exchanges)
-
-        print(s)
 
         # ...
 
@@ -48,8 +63,6 @@ class TestExecutionStrategy(StrategyTest):
     def test_1(self):
         s = ExecutionStrategy(self._exchanges)
 
-        print(s)
-
         # ...
 
 
@@ -58,8 +71,6 @@ class TestEntryStrategy(StrategyTest):
     """
     def test_1(self):
         s = EntryStrategy(self._exchanges)
-
-        print(s)
 
         # ...
 
@@ -70,8 +81,6 @@ class TestPositionStrategy(StrategyTest):
     def test_1(self):
         s = PositionStrategy(self._exchanges)
 
-        print(s)
-
         # ...
 
 
@@ -80,7 +89,5 @@ class TestExitStrategy(StrategyTest):
     """
     def test_1(self):
         s = ExitStrategy(self._exchanges)
-
-        print(s)
 
         # ...

@@ -117,8 +117,8 @@ class DataStrategy(Strategy):
             
         return recompute
 
-    @mid_market_price
     @mid_market_price_returns
+    @mid_market_price
     def on_best_bid(self, value):
         exchange = self._exchanges[value["exchange_name"]]
 
@@ -130,9 +130,8 @@ class DataStrategy(Strategy):
 
         return super().on_best_bid(value)
 
-
-    @mid_market_price
     @mid_market_price_returns
+    @mid_market_price
     def on_best_ask(self, value):
         exchange = self._exchanges[value["exchange_name"]]
 
@@ -160,6 +159,34 @@ class RiskStrategy(Strategy):
         f = (p / a) - (q / b)
         return f / 100
 
+    def with_kelly_fraction(func):
+        def calculate(self, value):
+
+            # ...
+
+            # calculate amount to allocate to long position
+            balance = 0
+            fraction = kelly_fraction(value["confidence"],
+                                      value["stop_loss"],
+                                      value["take_profit"])
+
+            # do work here
+            # ...
+
+            return []
+
+        return calculate
+
+    def if_above_minimum_trade_size(func):
+        def determine(self, value):
+
+            # do work here
+            # ...
+
+            return []
+
+        return determine
+
     def if_sufficient_balance(func):
         def determine(self, value):
             # contextual info
@@ -183,25 +210,10 @@ class RiskStrategy(Strategy):
 
         return determine
 
-    def if_above_minimum_trade_size(func):
-        def determine(self, value):
-
-            # do work here
-            # ...
-
-            return []
-
-        return determine
-
-    @if_sufficient_balance
+    @with_kelly_fraction
     @if_above_minimum_trade_size
+    @if_sufficient_balance
     def on_long(self, value):
-        # calculate amount to allocate to long position
-        balance = 0
-        fraction = kelly_fraction(value["confidence"],
-                                  value["stop_loss"],
-                                  value["take_profit"])
-
         # return event: take from asking side of the order book
         # for given exchange and market id
         return [
@@ -213,15 +225,10 @@ class RiskStrategy(Strategy):
             })
         ]
 
-    @if_sufficient_balance
+    @with_kelly_fraction
     @if_above_minimum_trade_size
+    @if_sufficient_balance
     def on_short(self, value):
-        # calculate amount to allocate to short position
-        balance = 0
-        fraction = kelly_fraction(value["confidence"],
-                                  value["stop_loss"],
-                                  value["take_profit"])
-
         # return event: take from bidding side of the order
         # book for given exchange and market id
         return [
@@ -242,10 +249,16 @@ class ExecutionStrategy(Strategy):
         self._bid_queue = []
         self._ask_queue = []
 
+    def match_algorithm(self):
+        return []
+
     def trigger_bid_matches(func):
         def match(self, value):
             # call the decorated function
             output = func(self, value)
+
+            # ...
+            matches = match_algorithm()
 
             # ...
 
@@ -257,6 +270,9 @@ class ExecutionStrategy(Strategy):
         def match(self, value):
             # call the decorated function
             output = func(self, value)
+
+            # ...
+            matches = match_algorithm()
 
             # ...
 
