@@ -1,5 +1,5 @@
-import exchange
-import strategy
+from . import exchange
+from . import strategy
 
 
 def spot_market_cryptocurrency_exchanges():

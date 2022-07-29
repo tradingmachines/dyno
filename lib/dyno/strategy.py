@@ -148,7 +148,6 @@ class DataStrategy(Strategy):
 class RiskStrategy(Strategy):
     """ ...
     """
-    @staticmethod
     def kelly_fraction(confidence, negative, positive):
         """ ...
         https://en.wikipedia.org/wiki/Kelly_criterion#Investment_formula
@@ -277,7 +276,7 @@ class ExecutionStrategy(Strategy):
 class EntryStrategy(ExecutionStrategy):
     """ ...
     """
-    @trigger_bid_matches
+    @ExecutionStrategy.trigger_bid_matches
     def on_take_from_bids(self, value):
         # take from bids by appending to bid queue
         self._bid_queue.append({
@@ -289,7 +288,7 @@ class EntryStrategy(ExecutionStrategy):
 
         return []
 
-    @trigger_ask_matches
+    @ExecutionStrategy.trigger_ask_matches
     def on_take_from_asks(self, value):
         # take from asks by appending to ask queue
         self._ask_queue.append({
@@ -321,6 +320,14 @@ class PositionStrategy(Strategy):
 
         return check
 
+    @check_positions
+    def on_best_bid(self, value):
+        return super().on_best_bid(value)
+
+    @check_positions
+    def on_best_ask(self, value):
+        return super().on_best_ask(value)
+
     def on_bid_fill(self, value):
 
         # liquidity was removed from the bid side
@@ -335,19 +342,11 @@ class PositionStrategy(Strategy):
 
         return []
 
-    @check_positions
-    def on_best_bid(self, value):
-        return super().on_best_bid(value)
-
-    @check_positions
-    def on_best_ask(self, value):
-        return super().on_best_ask(value)
-
 
 class ExitStrategy(ExecutionStrategy):
     """ ...
     """
-    @trigger_bid_matches
+    @ExecutionStrategy.trigger_bid_matches
     def on_give_to_bids(self, value):
         # give to bids by appending to bids queue
         self._bid_queue.append({
@@ -359,7 +358,7 @@ class ExitStrategy(ExecutionStrategy):
 
         return []
 
-    @trigger_ask_matches
+    @ExecutionStrategy.trigger_ask_matches
     def on_give_to_asks(self, value):
         # give to asks by appending to asks queue
         self._ask_queue.append({

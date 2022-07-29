@@ -1,6 +1,6 @@
 import unittest
 
-from dyno import Strategy
+from dyno.strategy import Strategy
 
 
 class TestSignalStrategy(Strategy):

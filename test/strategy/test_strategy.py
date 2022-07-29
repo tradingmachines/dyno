@@ -1,12 +1,12 @@
 from .mock_environment import StrategyTest
 
-from dyno import Strategy
-from dyno import DataStrategy
-from dyno import RiskStrategy
-from dyno import ExecutionStrategy
-from dyno import EntryStrategy
-from dyno import PositionStrategy
-from dyno import ExitStrategy
+from dyno.strategy import Strategy
+from dyno.strategy import DataStrategy
+from dyno.strategy import RiskStrategy
+from dyno.strategy import ExecutionStrategy
+from dyno.strategy import EntryStrategy
+from dyno.strategy import PositionStrategy
+from dyno.strategy import ExitStrategy
 
 
 class TestBaseStrategy(StrategyTest):
