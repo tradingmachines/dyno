@@ -90,6 +90,7 @@ class TestRiskStrategy(StrategyTest):
     def test_1(self):
         s = RiskStrategy(self._exchanges)
 
+        # not finished
         # ...
 
 
@@ -99,6 +100,7 @@ class TestExecutionStrategy(StrategyTest):
     def test_1(self):
         s = ExecutionStrategy(self._exchanges)
 
+        # not finished
         # ...
 
 
@@ -108,6 +110,7 @@ class TestEntryStrategy(StrategyTest):
     def test_1(self):
         s = EntryStrategy(self._exchanges)
 
+        # not finished
         # ...
 
 
@@ -117,6 +120,7 @@ class TestPositionStrategy(StrategyTest):
     def test_1(self):
         s = PositionStrategy(self._exchanges)
 
+        # not finished
         # ...
 
 
@@ -126,4 +130,5 @@ class TestExitStrategy(StrategyTest):
     def test_1(self):
         s = ExitStrategy(self._exchanges)
 
+        # not finished
         # ...

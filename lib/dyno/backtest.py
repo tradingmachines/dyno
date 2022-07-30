@@ -155,11 +155,11 @@ class Pipeline:
         """ ...
         """
         # ...
-        foldl = lambda f, acc, xs: functools.reduce(func, xs, acc)
-        do_stage = lambda stage, acc: stage(acc)
+        foldl = lambda func, acc, xs: functools.reduce(func, xs, acc)
+        do_stage = lambda acc, stage: stage(acc)
 
         # ...
-        final_output = foldl(do_stage, self._stages, inputs)
+        final_output = foldl(do_stage, inputs, self._stages)
 
         return final_output
 

@@ -1,7 +1,7 @@
 import unittest
 
 
-class ClientTest(unittest.TestCase):
+class HelpersTest(unittest.TestCase):
     """ ...
     """
     def setUp(self):

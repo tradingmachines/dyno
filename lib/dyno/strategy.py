@@ -160,6 +160,7 @@ class DataStrategy(Strategy):
 class RiskStrategy(Strategy):
     """ ...
     """
+    @staticmethod
     def kelly_fraction(confidence, negative, positive):
         """ ...
         https://en.wikipedia.org/wiki/Kelly_criterion#Investment_formula
@@ -172,36 +173,67 @@ class RiskStrategy(Strategy):
         f = (p / a) - (q / b)
         return f / 100
 
-    def with_kelly_fraction(func):
-        def calculate(self, value):
-
-            # ...
-
-            # calculate amount to allocate to long position
-            balance = 0
-            fraction = kelly_fraction(value["confidence"],
-                                      value["stop_loss"],
-                                      value["take_profit"])
-
-            # do work here
-            # ...
-
-            return []
-
-        return calculate
-
     def if_above_minimum_trade_size(func):
         def determine(self, value):
+            # call the decorated function and retrieve
+            # the event inputs
+            output = func(self, value)
+            _, inputs = output
 
-            # do work here
-            # ...
+            # contextual info
+            exchange_name = inputs["exchange_name"]
+            base_currency = inputs["base_currency"]
+            quote_currency = inputs["quote_currency"]
 
-            return []
+            # get exchange object and minimum trade size
+            # for given exchange and market
+            exchange = self._exchanges[exchange_name]
+            minimum_quote = exchange.get_quoted_min_trade_size(
+                base_currency, quote_currency)
+
+            if inputs["amount_quote"] > minimum_quote:
+                # if amount is greater than minimum
+                # then return the decorated function's output
+                return output
+            else:
+                # otherwise do not return output
+                return []
 
         return determine
 
+    def if_below_maximum_trade_size(func):
+        def determine(self, value):
+            # call the decorated function and retrieve
+            # the event inputs
+            output = func(self, value)
+            _, inputs = output
+
+            # contextual info
+            exchange_name = inputs["exchange_name"]
+            base_currency = inputs["base_currency"]
+            quote_currency = inputs["quote_currency"]
+
+            # get exchange object and maximum trade size
+            # for given exchange and market
+            exchange = self._exchanges[exchange_name]
+            maximum_quote = exchange.get_quoted_max_trade_size(
+                base_currency, quote_currency)
+
+            if inputs["amount_quote"] < maximum_quote:
+                # if amount is less than minimum
+                # then return the decorated function's output
+                return output
+            else:
+                # otherwise do not return output
+                return []
+
+            return determine
+
     def if_sufficient_balance(func):
         def determine(self, value):
+            # call the decorated function
+            output = func(self, value)
+
             # contextual info
             exchange_name = value["exchange_name"]
             quote_currency = value["quote_currency"]
@@ -210,22 +242,22 @@ class RiskStrategy(Strategy):
             # get exchange object, balance, and fee of trade
             # on the relevant exchange
             exchange = self._exchanges[exchange_name]
-            balance = exchange.get_balance(quote_currency)
-            fee = exchange.get_fee(amount_quote)
+            balance_quote = exchange.get_balance(quote_currency)
+            fee_quote = exchange.get_fee_quote(amount_quote)
 
-            if balance > value["amount_quote"] + fee:
-                # if have enough balance then call and return
-                # the output of the decorated function
-                return func(value)
+            if balance_quote > value["amount_quote"] + fee_quote:
+                # if have sufficient funds to cover the position + fee
+                # then return the decorated function's output
+                return output
             else:
                 # otherwise return nothing
                 return []
 
         return determine
 
-    @with_kelly_fraction
-    @if_above_minimum_trade_size
     @if_sufficient_balance
+    @if_above_minimum_trade_size
+    @if_below_maximum_trade_size
     def on_long(self, value):
         # return event: take from asking side of the order book
         # for given exchange and market id
@@ -234,13 +266,13 @@ class RiskStrategy(Strategy):
                 "market_id": value["market_id"],
                 "exchange_name": value["exchange_name"],
                 "price": value["price"],
-                "amount": balance * fraction
+                "amount_quote": balance * fraction
             })
         ]
 
-    @with_kelly_fraction
-    @if_above_minimum_trade_size
     @if_sufficient_balance
+    @if_above_minimum_trade_size
+    @if_below_maximum_trade_size
     def on_short(self, value):
         # return event: take from bidding side of the order
         # book for given exchange and market id
@@ -249,7 +281,7 @@ class RiskStrategy(Strategy):
                 "market_id": value["market_id"],
                 "exchange_name": value["exchange_name"],
                 "price": value["price"],
-                "amount": balance * fraction
+                "amount_quote": balance * fraction
             })
         ]
 
@@ -262,7 +294,8 @@ class ExecutionStrategy(Strategy):
         self._bid_queue = []
         self._ask_queue = []
 
-    def match_algorithm(self):
+    @staticmethod
+    def match_algorithm():
         return []
 
     def trigger_bid_matches(func):
@@ -271,7 +304,7 @@ class ExecutionStrategy(Strategy):
             output = func(self, value)
 
             # ...
-            matches = match_algorithm()
+            matches = ExecutionStrategy.match_algorithm()
 
             # ...
 
@@ -285,7 +318,7 @@ class ExecutionStrategy(Strategy):
             output = func(self, value)
 
             # ...
-            matches = match_algorithm()
+            matches = ExecutionStrategy.match_algorithm()
 
             # ...
 
