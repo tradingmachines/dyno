@@ -7,32 +7,31 @@ class Strategy:
     def __init__(self, exchanges):
         self._exchanges = exchanges
 
-    def __call__(self, inputs):
-        all_outputs = []
+    def __call__(self, events_in):
+        events_out = []
 
         # consider each of the inputs
-        for input_name, value in inputs:
-            func_name = f"on_{input_name}"
+        for event_name, unix_ts_ns, inputs in events_in:
+            func_name = f"on_{event_name}"
 
             if hasattr(self, func_name):
                 # try to call the input's handler function
                 # append outputs to list of outputs
                 func = getattr(self, func_name)
-                outputs = func(value)
-                all_outputs.extend(outputs)
+                events_out.extend(func(unix_ts_ns, inputs))
 
             else:
                 # if no handler then just add the input to
                 # the list of outputs
-                all_outputs.append((input_name, value))
+                events_out.append((event_name, unix_ts_ns, inputs))
 
-        return all_outputs
+        return events_out
 
-    def on_best_bid(self, value):
-        return [("best_bid", value)]
+    def on_best_bid(self, unix_ts_ns, inputs):
+        return [("best_bid", unix_ts_ns, inputs)]
 
-    def on_best_ask(self, value):
-        return [("best_ask", value)]
+    def on_best_ask(self, unix_ts_ns, inputs):
+        return [("best_ask", unix_ts_ns, inputs)]
 
 
 class DataStrategy(Strategy):
@@ -44,13 +43,13 @@ class DataStrategy(Strategy):
         self._prev_mid_market_prices = {}
 
     def mid_market_price_returns(func):
-        def recompute(self, value):
+        def recompute(self, unix_ts_ns, inputs):
             # call the decorated function
-            output = func(self, value)
+            events = func(self, unix_ts_ns, inputs)
 
             # contextual info
-            exchange_name = value["exchange_name"]
-            market_id = value["market_id"]
+            exchange_name = inputs["exchange_name"]
+            market_id = inputs["market_id"]
 
             # get current mid market price
             if market_id in self._curr_mid_market_prices:
@@ -67,8 +66,8 @@ class DataStrategy(Strategy):
             if curr != None and prev != None:
                 # return output of decorated function + mid market
                 # returns (linear and log) event
-                return output + [
-                    ("mid_market_price_returns", {
+                return events + [
+                    ("mid_market_price_returns", unix_ts_ns, {
                         "market_id": market_id,
                         "exchange_name": exchange_name,
                         "lin": (curr - prev) / prev,
@@ -79,18 +78,18 @@ class DataStrategy(Strategy):
             else:
                 # if current or previous mid market price are
                 # none then just return output of decorated function
-                return output
+                return events
 
         return recompute
 
     def mid_market_price(func):
-        def recompute(self, value):
+        def recompute(self, unix_ts_ns, inputs):
             # call the decorated function
-            output = func(self, value)
+            events = func(self, unix_ts_ns, inputs)
 
             # contextual info
-            market_id = value["market_id"]
-            exchange_name = value["exchange_name"]
+            market_id = inputs["market_id"]
+            exchange_name = inputs["exchange_name"]
 
             # get exchange object
             exchange = self._exchanges[exchange_name]
@@ -115,8 +114,8 @@ class DataStrategy(Strategy):
 
                 # return output of decorated function + mid market
                 # price change event
-                return output + [
-                    ("mid_market_price", {
+                return events + [
+                    ("mid_market_price", unix_ts_ns, {
                         "market_id": market_id,
                         "exchange_name": exchange_name,
                         "mid_market_price": midm
@@ -126,35 +125,35 @@ class DataStrategy(Strategy):
             else:
                 # if best bid/ask price is none then just return
                 # output of decorated function
-                return output
+                return events
             
         return recompute
 
     @mid_market_price_returns
     @mid_market_price
-    def on_best_bid(self, value):
-        exchange = self._exchanges[value["exchange_name"]]
+    def on_best_bid(self, unix_ts_ns, inputs):
+        exchange = self._exchanges[inputs["exchange_name"]]
 
         # set the best bid price and current liquidity
         # on exchange for given market id
-        exchange.set_best_bid(value["market_id"],
-                              value["price"],
-                              value["liquidity"])
+        exchange.set_best_bid(inputs["market_id"],
+                              inputs["price"],
+                              inputs["liquidity"])
 
-        return super().on_best_bid(value)
+        return super().on_best_bid(unix_ts_ns, inputs)
 
     @mid_market_price_returns
     @mid_market_price
-    def on_best_ask(self, value):
-        exchange = self._exchanges[value["exchange_name"]]
+    def on_best_ask(self, unix_ts_ns, inputs):
+        exchange = self._exchanges[inputs["exchange_name"]]
 
         # set the best ask price and current liquidity
         # on exchange for given market id
-        exchange.set_best_ask(value["market_id"],
-                              value["price"],
-                              value["liquidity"])
+        exchange.set_best_ask(inputs["market_id"],
+                              inputs["price"],
+                              inputs["liquidity"])
 
-        return super().on_best_ask(value)
+        return super().on_best_ask(unix_ts_ns, inputs)
 
 
 class RiskStrategy(Strategy):
@@ -174,114 +173,78 @@ class RiskStrategy(Strategy):
         return f / 100
 
     def if_above_minimum_trade_size(func):
-        def determine(self, value):
-            # call the decorated function and retrieve
-            # the event inputs
-            output = func(self, value)
-            _, inputs = output
+        def determine(self, unix_ts_ns, inputs):
+            # call the decorated function
+            events = func(self, unix_ts_ns, inputs)
 
-            # contextual info
-            exchange_name = inputs["exchange_name"]
-            base_currency = inputs["base_currency"]
-            quote_currency = inputs["quote_currency"]
+            # do work here
+            # ...
 
-            # get exchange object and minimum trade size
-            # for given exchange and market
-            exchange = self._exchanges[exchange_name]
-            minimum_quote = exchange.get_quoted_min_trade_size(
-                base_currency, quote_currency)
-
-            if inputs["amount_quote"] > minimum_quote:
-                # if amount is greater than minimum
-                # then return the decorated function's output
-                return output
-            else:
-                # otherwise do not return output
-                return []
+            return events
 
         return determine
 
     def if_below_maximum_trade_size(func):
-        def determine(self, value):
-            # call the decorated function and retrieve
-            # the event inputs
-            output = func(self, value)
-            _, inputs = output
-
-            # contextual info
-            exchange_name = inputs["exchange_name"]
-            base_currency = inputs["base_currency"]
-            quote_currency = inputs["quote_currency"]
-
-            # get exchange object and maximum trade size
-            # for given exchange and market
-            exchange = self._exchanges[exchange_name]
-            maximum_quote = exchange.get_quoted_max_trade_size(
-                base_currency, quote_currency)
-
-            if inputs["amount_quote"] < maximum_quote:
-                # if amount is less than minimum
-                # then return the decorated function's output
-                return output
-            else:
-                # otherwise do not return output
-                return []
-
-            return determine
-
-    def if_sufficient_balance(func):
-        def determine(self, value):
+        def determine(self, unix_ts_ns, inputs):
             # call the decorated function
-            output = func(self, value)
+            events = func(self, unix_ts_ns, inputs)
 
-            # contextual info
-            exchange_name = value["exchange_name"]
-            quote_currency = value["quote_currency"]
-            amount_quote = value["amount_quote"]
+            # do work here
+            # ...
 
-            # get exchange object, balance, and fee of trade
-            # on the relevant exchange
-            exchange = self._exchanges[exchange_name]
-            balance_quote = exchange.get_balance(quote_currency)
-            fee_quote = exchange.get_fee_quote(amount_quote)
-
-            if balance_quote > value["amount_quote"] + fee_quote:
-                # if have sufficient funds to cover the position + fee
-                # then return the decorated function's output
-                return output
-            else:
-                # otherwise return nothing
-                return []
+            return events
 
         return determine
 
-    @if_sufficient_balance
     @if_above_minimum_trade_size
     @if_below_maximum_trade_size
-    def on_long(self, value):
-        # return event: take from asking side of the order book
-        # for given exchange and market id
+    def on_long(self, unix_ts_ns, inputs):
+        # calculate fraction of available balance to use
+        balance = 0
+        fraction = RiskStrategy.kelly_fraction(
+            inputs["confidence_pct"],
+            inputs["stop_loss_pct"],
+            inputs["take_profit_pct"])
+
         return [
-            ("take_from_asks", {
-                "market_id": value["market_id"],
-                "exchange_name": value["exchange_name"],
-                "price": value["price"],
-                "amount_quote": balance * fraction
+            # the original long event + its inputs
+            ("long_executed", unix_ts_ns, inputs),
+
+            # return event: take from ask side of the order
+            # book for given exchange and market id
+            ("take_from_asks", unix_ts_ns, {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "base_currency": inputs["base_currency"],
+                "quote_currency": inputs["quote_currency"],
+                "price": inputs["price"],
+                "amount": balance * fraction
             })
         ]
 
-    @if_sufficient_balance
     @if_above_minimum_trade_size
     @if_below_maximum_trade_size
-    def on_short(self, value):
-        # return event: take from bidding side of the order
-        # book for given exchange and market id
+    def on_short(self, unix_ts_ns, inputs):
+        # calculate fraction of available balance to use
+        balance = 0
+        fraction = RiskStrategy.kelly_fraction(
+            inputs["confidence_pct"],
+            inputs["stop_loss_pct"],
+            inputs["take_profit_pct"])
+
         return [
-            ("take_from_bids", {
-                "market_id": value["market_id"],
-                "exchange_name": value["exchange_name"],
-                "price": value["price"],
-                "amount_quote": balance * fraction
+            # the original short event + its inputs
+            ("short_executed", unix_ts_ns, inputs),
+
+            # return event: take from bid side of the order
+            # book for given exchange and market id
+            ("take_from_bids", unix_ts_ns, {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "base_currency": inputs["base_currency"],
+                "quote_currency": inputs["quote_currency"],
+                "price": inputs["price"],
+                "amount": balance * fraction
             })
         ]
 
@@ -299,68 +262,78 @@ class ExecutionStrategy(Strategy):
         return []
 
     def trigger_bid_matches(func):
-        def match(self, value):
+        def match(self, unix_ts_ns, inputs):
             # call the decorated function
-            output = func(self, value)
+            events = func(self, unix_ts_ns, inputs)
 
-            # ...
-            matches = ExecutionStrategy.match_algorithm()
-
+            # do work here
             # ...
 
-            return output
+            return events
 
         return match
 
     def trigger_ask_matches(func):
-        def match(self, value):
+        def match(self, unix_ts_ns, inputs):
             # call the decorated function
-            output = func(self, value)
+            events = func(self, unix_ts_ns, inputs)
 
-            # ...
-            matches = ExecutionStrategy.match_algorithm()
-
+            # do work here
             # ...
 
-            return output
+            return events
 
         return match
 
     @trigger_bid_matches
-    def on_best_bid(self, value):
-        return super().on_best_bid(value)
+    def on_best_bid(self, unix_ts_ns, inputs):
+        return super().on_best_bid(unix_ts_ns, inputs)
 
     @trigger_ask_matches
-    def on_best_ask(self, value):
-        return super().on_best_ask(value)
+    def on_best_ask(self, unix_ts_ns, inputs):
+        return super().on_best_ask(unix_ts_ns, inputs)
 
 
 class EntryStrategy(ExecutionStrategy):
     """ ...
     """
     @ExecutionStrategy.trigger_bid_matches
-    def on_take_from_bids(self, value):
+    def on_take_from_bids(self, unix_ts_ns, inputs):
         # take from bids by appending to bid queue
         self._bid_queue.append({
-            "market_id": value["market_id"],
-            "exchange_name": value["exchange_name"],
-            "price": value["price"],
-            "remaining": value["amount"]
+            "market_id": inputs["market_id"],
+            "exchange_name": inputs["exchange_name"],
+            "price": inputs["price"],
+            "remaining": inputs["amount"]
         })
 
-        return []
+        return [
+            ("entry_bid_queue_append", unix_ts_ns, {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "price": inputs["price"],
+                "remaining": inputs["amount"]
+            })
+        ]
 
     @ExecutionStrategy.trigger_ask_matches
-    def on_take_from_asks(self, value):
+    def on_take_from_asks(self, unix_ts_ns, inputs):
         # take from asks by appending to ask queue
         self._ask_queue.append({
-            "market_id": value["market_id"],
-            "exchange_name": value["exchange_name"],
-            "price": value["price"],
-            "remaining": value["amount"]
+            "market_id": inputs["market_id"],
+            "exchange_name": inputs["exchange_name"],
+            "price": inputs["price"],
+            "remaining": inputs["amount"]
         })
 
-        return []
+        return [
+            ("entry_ask_queue_append", unix_ts_ns, {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "price": inputs["price"],
+                "remaining": inputs["amount"]
+            })
+        ]
 
 
 class PositionStrategy(Strategy):
@@ -372,32 +345,33 @@ class PositionStrategy(Strategy):
         self._short_positions = []
 
     def check_positions(func):
-        def check(self, value):
+        def check(self, unix_ts_ns, inputs):
             # call the decorated function
-            output = func(self, value)
+            events = func(self, unix_ts_ns, inputs)
 
+            # do work here
             # ...
 
-            return output
+            return events
 
         return check
 
     @check_positions
-    def on_best_bid(self, value):
-        return super().on_best_bid(value)
+    def on_best_bid(self, unix_ts_ns, inputs):
+        return super().on_best_bid(unix_ts_ns, inputs)
 
     @check_positions
-    def on_best_ask(self, value):
-        return super().on_best_ask(value)
+    def on_best_ask(self, unix_ts_ns, inputs):
+        return super().on_best_ask(unix_ts_ns, inputs)
 
-    def on_bid_fill(self, value):
+    def on_bid_fill(self, unix_ts_ns, inputs):
 
         # liquidity was removed from the bid side
         # ...
         
         return []
 
-    def on_ask_fill(self, value):
+    def on_ask_fill(self, unix_ts_ns, inputs):
 
         # liquidity was removed from the ask side
         # ...
@@ -409,25 +383,39 @@ class ExitStrategy(ExecutionStrategy):
     """ ...
     """
     @ExecutionStrategy.trigger_bid_matches
-    def on_give_to_bids(self, value):
+    def on_give_to_bids(self, unix_ts_ns, inputs):
         # give to bids by appending to bids queue
         self._bid_queue.append({
-            "market_id": value["market_id"],
-            "exchange_name": value["exchange_name"],
-            "price": value["price"],
-            "remaining": value["amount"]
+            "market_id": inputs["market_id"],
+            "exchange_name": inputs["exchange_name"],
+            "price": inputs["price"],
+            "remaining": inputs["amount"]
         })
 
-        return []
+        return [
+            ("exit_bid_queue_append", unix_ts_ns, {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "price": inputs["price"],
+                "remaining": inputs["amount"]
+            })
+        ]
 
     @ExecutionStrategy.trigger_ask_matches
-    def on_give_to_asks(self, value):
+    def on_give_to_asks(self, unix_ts_ns, inputs):
         # give to asks by appending to asks queue
         self._ask_queue.append({
-            "market_id": value["market_id"],
-            "exchange_name": value["exchange_name"],
-            "price": value["price"],
-            "remaining": value["amount"]
+            "market_id": inputs["market_id"],
+            "exchange_name": inputs["exchange_name"],
+            "price": inputs["price"],
+            "remaining": inputs["amount"]
         })
 
-        return []
+        return [
+            ("exit_ask_queue_append", unix_ts_ns, {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "price": inputs["price"],
+                "remaining": inputs["amount"]
+            })
+        ]

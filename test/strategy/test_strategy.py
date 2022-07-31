@@ -16,9 +16,9 @@ class TestBaseStrategy(StrategyTest):
         s = Strategy(self._exchanges)
 
         # test input events
-        bid = ("best_bid", 123)
-        ask = ("best_ask", 456)
-        something = ("something", 789)
+        bid = ("best_bid", 0, 123)
+        ask = ("best_ask", 0, 456)
+        something = ("something", 0, 789)
 
         # make sure outputs equal original inputs
         self.assertTrue(s([bid]), [bid])
@@ -33,13 +33,13 @@ class TestDataStrategy(StrategyTest):
         s = DataStrategy(self._exchanges)
 
         # mock data for market 1 on exchange 1
-        bid1 = ("best_bid", {
+        bid1 = ("best_bid", 0, {
             "exchange_name": "EXCHANGE 1",
             "market_id": 1,
             "price": 123,
             "liquidity": 100
         })
-        ask1 = ("best_ask", {
+        ask1 = ("best_ask", 0, {
             "exchange_name": "EXCHANGE 1",
             "market_id": 1,
             "price": 123,
@@ -47,13 +47,13 @@ class TestDataStrategy(StrategyTest):
         })
 
         # mock data for market 2 on exchange 2
-        bid2 = ("best_bid", {
+        bid2 = ("best_bid", 1, {
             "exchange_name": "EXCHANGE 2",
             "market_id": 2,
             "price": 123,
             "liquidity": 100
         })
-        ask2 = ("best_ask", {
+        ask2 = ("best_ask", 1, {
             "exchange_name": "EXCHANGE 2",
             "market_id": 2,
             "price": 123,

@@ -15,36 +15,46 @@ class TestSignalStrategy(Strategy):
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
-        self._rand = random.SystemRandom(12345)
+        self._rand = random.Random(12345)
 
-    def on_mid_market_price_returns(self, value):
+    def on_mid_market_price_returns(self, unix_ts_ns, inputs):
         # uniform pick from {1 2 3 4 5 6 7 8 9}
         rand = self._rand.randint(1, 9)
 
         # contextual info
-        market_id = value["market_id"]
-        exchange_name = value["exchange_name"]
+        market_id = inputs["market_id"]
+        exchange_name = inputs["exchange_name"]
         exchange = self._exchanges[exchange_name]
 
         if rand in [1, 2, 3]:
             # 1/3 of the time -> long
             return [
-                ("long", {
+                ("long", unix_ts_ns, {
                     "market_id": market_id,
                     "exchange_name": exchange_name,
+                    "base_currency": "BTC",
+                    "quote_currency": "GBP",
                     "price": exchange.get_best_ask_price(market_id),
-                    "confidence": (1 + rand) / 10
+                    "amount": 10,
+                    "confidence_pct": (1 + rand) / 10,
+                    "stop_loss_pct": 0.03,
+                    "take_profit_pct": 0.06
                 })
             ]
 
         elif rand in [4, 5, 6]:
             # 1/3 of the time -> short
             return [
-                ("short", {
+                ("short", unix_ts_ns, {
                     "market_id": market_id,
                     "exchange_name": exchange_name,
+                    "base_currency": "BTC",
+                    "quote_currency": "GBP",
                     "price": exchange.get_best_bid_price(market_id),
-                    "confidence": (1 + rand) / 10
+                    "amount": 10,
+                    "confidence_pct": (1 + rand) / 10,
+                    "stop_loss_pct": 0.03,
+                    "take_profit_pct": 0.06
                 })
             ]
 
@@ -85,13 +95,13 @@ class TestBuildStrategies(HelpersTest):
         s = build_basic_signal_strategy(TestSignalStrategy, exchanges)
 
         # mock bid events
-        bid1 = ("best_bid", {
+        bid1 = ("best_bid", 0, {
             "exchange_name": "COINBASE",
             "market_id": 1,
             "price": 123,
             "liquidity": 100
         })
-        bid2 = ("best_bid", {
+        bid2 = ("best_bid", 0, {
             "exchange_name": "COINBASE",
             "market_id": 1,
             "price": 122,
@@ -99,13 +109,13 @@ class TestBuildStrategies(HelpersTest):
         })
 
         # mock ask events
-        ask1 = ("best_ask", {
+        ask1 = ("best_ask", 1, {
             "exchange_name": "COINBASE",
             "market_id": 1,
             "price": 125,
             "liquidity": 1123
         })
-        ask2 = ("best_ask", {
+        ask2 = ("best_ask", 1, {
             "exchange_name": "COINBASE",
             "market_id": 1,
             "price": 128,

@@ -10,14 +10,14 @@ class TestSignalStrategy(Strategy):
         super().__init__(exchanges)
         self._random_seed = random_seed
 
-    def on_mid_market_price_returns(self, value):
+    def on_mid_market_price_returns(self, unix_ts_ns, inputs):
 
         # do work here
         # ...
 
         if something:
             return [
-                ("long", {
+                ("long", unix_ts_ns, {
                     "market_id": market_id,
                     "exchange_name": exchange_name,
                     "price": best_ask_price,
@@ -27,7 +27,7 @@ class TestSignalStrategy(Strategy):
 
         elif something:
             return [
-                ("short", {
+                ("short", unix_ts_ns, {
                     "market_id": market_id,
                     "exchange_name": exchange_name,
                     "price": best_bid_price,
