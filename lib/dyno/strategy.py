@@ -172,32 +172,6 @@ class RiskStrategy(Strategy):
         f = (p / a) - (q / b)
         return f / 100
 
-    def if_above_minimum_trade_size(func):
-        def determine(self, unix_ts_ns, inputs):
-            # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
-
-            # do work here
-            # ...
-
-            return events
-
-        return determine
-
-    def if_below_maximum_trade_size(func):
-        def determine(self, unix_ts_ns, inputs):
-            # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
-
-            # do work here
-            # ...
-
-            return events
-
-        return determine
-
-    @if_above_minimum_trade_size
-    @if_below_maximum_trade_size
     def on_long(self, unix_ts_ns, inputs):
         # calculate fraction of available balance to use
         balance = 0
@@ -206,24 +180,33 @@ class RiskStrategy(Strategy):
             inputs["stop_loss_pct"],
             inputs["take_profit_pct"])
 
-        return [
-            # the original long event + its inputs
-            ("long_executed", unix_ts_ns, inputs),
+        # ...
+        amount = balance * fraction
+        maximum = 0
+        minimum = 0
 
-            # return event: take from ask side of the order
-            # book for given exchange and market id
-            ("take_from_asks", unix_ts_ns, {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "base_currency": inputs["base_currency"],
-                "quote_currency": inputs["quote_currency"],
-                "price": inputs["price"],
-                "amount": balance * fraction
-            })
-        ]
+        if maximum > amount > minimum:
+             # ...
+            return [
+                # the original long event + its inputs
+                ("long_executed", unix_ts_ns, inputs),
 
-    @if_above_minimum_trade_size
-    @if_below_maximum_trade_size
+                # return event: take from ask side of the order
+                # book for given exchange and market id
+                ("take_from_asks", unix_ts_ns, {
+                    "market_id": inputs["market_id"],
+                    "exchange_name": inputs["exchange_name"],
+                    "base_currency": inputs["base_currency"],
+                    "quote_currency": inputs["quote_currency"],
+                    "price": inputs["price"],
+                    "amount": amount
+                })
+            ]
+
+        else:
+            # ...
+            return []
+
     def on_short(self, unix_ts_ns, inputs):
         # calculate fraction of available balance to use
         balance = 0
@@ -232,21 +215,32 @@ class RiskStrategy(Strategy):
             inputs["stop_loss_pct"],
             inputs["take_profit_pct"])
 
-        return [
-            # the original short event + its inputs
-            ("short_executed", unix_ts_ns, inputs),
+        # ...
+        amount = balance * fraction
+        maximum = 0
+        minimum = 0
 
-            # return event: take from bid side of the order
-            # book for given exchange and market id
-            ("take_from_bids", unix_ts_ns, {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "base_currency": inputs["base_currency"],
-                "quote_currency": inputs["quote_currency"],
-                "price": inputs["price"],
-                "amount": balance * fraction
-            })
-        ]
+        if maximum > amount > minimum:
+            # ...
+            return [
+                # the original short event + its inputs
+                ("short_executed", unix_ts_ns, inputs),
+
+                # return event: take from bid side of the order
+                # book for given exchange and market id
+                ("take_from_bids", unix_ts_ns, {
+                    "market_id": inputs["market_id"],
+                    "exchange_name": inputs["exchange_name"],
+                    "base_currency": inputs["base_currency"],
+                    "quote_currency": inputs["quote_currency"],
+                    "price": inputs["price"],
+                    "amount": amount
+                })
+            ]
+
+        else:
+            # ...
+            return []
 
 
 class ExecutionStrategy(Strategy):
@@ -312,7 +306,7 @@ class EntryStrategy(ExecutionStrategy):
                 "market_id": inputs["market_id"],
                 "exchange_name": inputs["exchange_name"],
                 "price": inputs["price"],
-                "remaining": inputs["amount"]
+                "initial_amount": inputs["amount"]
             })
         ]
 
@@ -331,7 +325,7 @@ class EntryStrategy(ExecutionStrategy):
                 "market_id": inputs["market_id"],
                 "exchange_name": inputs["exchange_name"],
                 "price": inputs["price"],
-                "remaining": inputs["amount"]
+                "initial_amount": inputs["amount"]
             })
         ]
 
@@ -397,7 +391,7 @@ class ExitStrategy(ExecutionStrategy):
                 "market_id": inputs["market_id"],
                 "exchange_name": inputs["exchange_name"],
                 "price": inputs["price"],
-                "remaining": inputs["amount"]
+                "initial_amount": inputs["amount"]
             })
         ]
 
@@ -416,6 +410,6 @@ class ExitStrategy(ExecutionStrategy):
                 "market_id": inputs["market_id"],
                 "exchange_name": inputs["exchange_name"],
                 "price": inputs["price"],
-                "remaining": inputs["amount"]
+                "initial_amount": inputs["amount"]
             })
         ]

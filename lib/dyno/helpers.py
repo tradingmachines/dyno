@@ -56,8 +56,72 @@ def build_basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
                     strategy.ExitStrategy(exchanges))
 
 
-class EventTimeWindow:
+class CircularQueue:
     """ ...
     """
     def __init__(self):
+        self._head = None
+        self._tail = None
+
+    def insert(self, thing):
+        """ ...
+        """
         pass
+
+    def trim_head(self, n=1):
+        """ ...
+        """
+
+        # ...
+
+        if n > 1:
+            return [trimmed] + self.trim_head(n - 1)
+        else:
+            return [trimmed]
+
+    def trim_tail(self, n=1):
+        """ ...
+        """
+
+        # ...
+
+        if n > 1:
+            return [trimmed] + self.trim_tail(n - 1)
+        else:
+            return [trimmed]
+
+    def get_head(self):
+        """ ...
+        """
+        return self._head
+
+    def get_tail(self):
+        """ ...
+        """
+        return self._tail
+
+
+class EventTimeWindow:
+    """ ...
+    """
+    def __init__(self, length_seconds):
+        self._length_seconds = length_seconds
+        self._circular_queue = CircularQueue()
+
+    def event(self, event_name, unix_ts_ns, inputs):
+        """ ...
+        """
+        pass
+
+
+class EventTimeSlidingWindow(SlidingWindow):
+    """ ...
+    """
+    def __init__(self, length_seconds, step_seconds):
+        super().__init__(length_seconds)
+        self._step_seconds = step_seconds
+
+    def event(self, event_name, unix_ts_ns, inputs):
+        """ ...
+        """
+        super().event(event_name, unix_ts_ns, inputs)
