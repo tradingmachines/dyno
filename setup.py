@@ -7,7 +7,7 @@ setup(
     version="0.1.0",
     author="William Santos",
     author_email="w@wsantos.net",
-    description="Strategy backtesting framework built on Pyspark",
+    description="Backtesting framework for high-frequency trading strategies",
     url="https://github.com/tradingmachines/dyno",
 
     # publicly accessible packages

@@ -11,11 +11,60 @@
 Backtesting framework for high-frequency trading strategies
 
 
-** examples
-...
+** example usage
+A more complete set of examples can be found in the =examples= directory.
+#+BEGIN_SRC python
+  from dyno import Backtest, Strategy
+  from dyno.helpers import build_basic_signal_strategy
+
+  # produce long/short entry signals
+  class TradeSignals(Strategy):
+      def on_mid_market_price(self):
+	  pass
+
+  # backtest data and strategy pipeline
+  events = []
+  pipeline = build_basic_signal_strategy(TradeSignals)
+
+  # the backtest, which can be executed more than once
+  backtest = Backtest(pipeline, events)
+
+  # run the backtest and print results
+  results = backtest.execute()
+  print(results)
+#+END_SRC
 
 ** library
 ...
 
+*** backtest
+Contains core dyno components: strategy pipeline and backtest class.
+The pipeline is a sequence of callable objects which are folded over
+from left to right: =stage 1 -> stage 2 -> ... -> stage n=.
+
+Backtest class expects a pipeline object and an iterator which, when
+iterated over, produces events to feed into the pipeline.
+
+*** exchange
+Used by strategy module. Defines exchange, order book, and bank roll
+abstractions. Also houses fee schedules for common cryptocurrency
+exchanges.
+
+*** helpers
+Helper functions and classes.
+
+*** strategy
+Defines framework for building high-frequency trading strategies on-top
+of the pipeline and backtest abstractions.
+
 ** running tests
-...
+Tests must be run from the root dyno directory. The makefile handles
+it all for you. Use =make test_all= to run all tests. Or test individual
+sub-packages:
+#+BEGIN_SRC bash
+  make test_light
+  make test_dark
+  make test_http
+  make test_level4
+  make test_pipeworks
+#+END_SRC
