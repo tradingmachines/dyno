@@ -62,71 +62,125 @@ class Results:
     def plot_summary(self):
         """ ...
         """
+
+        # plot graph with plotly
+        # ...
+
         pass
 
     def plot_equity_curve(self):
         """ ...
         """
+
+        # plot graph with plotly
+        # ...
+
         pass
 
     def plot_draw_down(self):
         """ ...
         """
+
+        # plot graph with plotly
+        # ...
+
         pass
 
     def plot_returns(self):
         """ ...
         """
+
+        # plot graph with plotly
+        # ...
+
         pass
 
     def backtest_timings(self):
         """ ...
         """
-        return {"start": "", "end": "", "took": ""}
+
+        # calculate backtest timings
+        # ...
+
+        # maybe: collect and plot distribution of timings of
+        # each event->pipeline->stages
+        # ...
+
+        return {
+            "start": "",
+            "end": "",
+            "took": ""
+        }
 
     def event_timings(self):
         """ ...
         """
+
+        # maybe: collect and plot distribution of timings of
+        # each event->pipeline->stages
+        # ...
+
         return {"first": "", "last": "", "timeframe": ""}
 
     def trades(self):
         """ ...
         """
-        return
+        return []
 
     def longs(self):
         """ ...
         """
-        return
+        return list(filter(lambda x: x.side == "", self.trades()))
 
     def shorts(self):
         """ ...
         """
-        return
+        return list(filter(lambda x: x.side == "", self.trades()))
 
     def net_gain(self):
         """ ...
         """
+
+        # calculate net gain
+        # ...
+
         return 0
 
     def win_rate(self):
         """ ...
         """
+
+        # calculate percentage of winning trades
+        # out of all trades
+        # ...
+
         return 0
 
     def sharpe_value(self):
         """ ...
         """
+
+        # calculate sharpe value against just holding the base currency
+        # ...
+
         return 0
 
     def max_drawdown(self):
         """ ...
         """
+
+        # calculate maximum drawdown during backtest
+        # ...
+
         return 0
 
     def returns(self):
         """ ...
         """
+
+        # return list of returns
+        # ...
+
         return[]
 
     def winning_trades(self):

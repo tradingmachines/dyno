@@ -12,7 +12,7 @@ Python libraries for light, dark, level4, and pipeworks APIs
 
 
 ** [backtest] todo list
-*** TODO results class summary statstics
+*** TODO results class summary statistics
 *** TODO results graph plotting functions
 *** TODO ensemble class -> running same backtest multiple times
 *** TODO ensemble class -> running same backtest on different data
