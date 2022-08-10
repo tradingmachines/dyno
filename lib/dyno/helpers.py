@@ -56,49 +56,147 @@ def build_basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
                     strategy.ExitStrategy(exchanges))
 
 
+class QueueNode:
+    """ ...
+    """
+    def __init__(self, prev_node, next_node, thing):
+        self.prev_node = prev_node
+        self.next_node = next_node
+        self.thing = thing
+
+
 class CircularQueue:
     """ ...
     """
     def __init__(self):
         self._head = None
         self._tail = None
+        self._counter = 0
+
+    def __len__(self):
+        return self._counter
+
+    def __iter__(self):
+        count = len(self)
+        things = self.get_head(count)
+        return iter(things)
 
     def insert(self, thing):
         """ ...
         """
-        pass
+        # create the new queue node
+        prev_node = self._head
+        next_node = self._tail
+        node = QueueNode(prev_node, next_node, thing)
+
+        if self._head != None:
+            # update current head's next node
+            self._head.prev_node = node
+        else:
+            # append new node to the queue
+            self._head = node
+
+        if self._tail != None:
+            # update current tail's previous node
+            self._tail.next_node = node
+
+        # append to queue and increment counter
+        self._tail = node
+        self._counter += 1
 
     def trim_head(self, n=1):
         """ ...
         """
+        # get the head
+        trimmed = self._head
 
-        # ...
+        if trimmed != None:
+            # queue is not empty
+            # set queue's head to current head's next node
+            # update counter
+            self._head = trimmed.next_node
+            self._counter -= 1
 
-        if n > 1:
-            return [trimmed] + self.trim_head(n - 1)
+            if n > 1:
+                # recurse
+                return [trimmed.thing] + self.trim_head(n - 1)
+            else:
+                # base case
+                return [trimmed.thing]
+
         else:
-            return [trimmed]
+            # cannot trim an empty queue
+            raise Exception("queue is empty")
 
     def trim_tail(self, n=1):
         """ ...
         """
+        # get the head
+        trimmed = self._tail
+
+        if trimmed != None:
+            # queue is not empty
+            # set queue's tail to current tail's previous node
+            # update counter
+            self._tail = trimmed.prev_node
+            self._counter -= 1
+
+            if n > 1:
+                # recurse
+                return [trimmed.thing] + self.trim_tail(n - 1)
+            else:
+                # base case
+                return [trimmed.thing]
+
+        else:
+            # cannot trim an empty queue
+            raise Exception("queue is empty")
+
+    def get_head(self, n=1):
+        """ ...
+        """
+        # get the head
+        head = self._head
 
         # ...
+        things = []
 
-        if n > 1:
-            return [trimmed] + self.trim_tail(n - 1)
-        else:
-            return [trimmed]
+        while n > 0:
+            if head != None:
+                # ...
+                things.append(head.thing)
+                head = head.next_node
 
-    def get_head(self):
+            else:
+                # the queue is empty
+                raise Exception("queue is empty")
+
+            n -= 1
+
+        return things
+
+    def get_tail(self, n=1):
         """ ...
         """
-        return self._head
+        # get the tail
+        tail = self._tail
 
-    def get_tail(self):
-        """ ...
-        """
-        return self._tail
+        # ...
+        things = []
+
+        while n > 0:
+            if tail != None:
+                # ...
+                things.append(tail.thing)
+                tail = tail.next_node
+
+            else:
+                # the queue is empty
+                raise Exception("queue is empty")
+
+            n -= 1
+
+        return things
 
 
 class EventTimeWindow:
@@ -108,20 +206,33 @@ class EventTimeWindow:
         self._length_seconds = length_seconds
         self._circular_queue = CircularQueue()
 
-    def event(self, event_name, unix_ts_ns, inputs):
+    def add_event(self, event_name, unix_ts_ns, inputs):
         """ ...
         """
+
+        # append to queue
+        # ...
+
+        # remove from tail of queue until different
+        # between head and tail is < length_seconds
+        # ...
+
         pass
 
+    def get_window(self):
+        """ ... 
+        """
+        return list(self._circular_queue)
 
-class EventTimeSlidingWindow(SlidingWindow):
+
+class EventTimeSlidingWindow(EventTimeWindow):
     """ ...
     """
     def __init__(self, length_seconds, step_seconds):
         super().__init__(length_seconds)
         self._step_seconds = step_seconds
 
-    def event(self, event_name, unix_ts_ns, inputs):
+    def next_window(self):
         """ ...
         """
-        super().event(event_name, unix_ts_ns, inputs)
+        return

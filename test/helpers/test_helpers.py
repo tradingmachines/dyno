@@ -8,6 +8,8 @@ from dyno.helpers import spot_market_cryptocurrency_exchanges
 from dyno.helpers import futures_market_cryptocurrency_exchanges
 from dyno.helpers import all_cryptocurrency_exchanges
 from dyno.helpers import build_basic_signal_strategy
+from dyno.helpers import CircularQueue
+from dyno.helpers import EventTimeWindow, EventTimeSlidingWindow
 
 
 class TestSignalStrategy(Strategy):
@@ -127,3 +129,16 @@ class TestBuildStrategies(HelpersTest):
 
         # send the second pair of events
         print(s.event([bid2, ask2]))
+
+
+class TestCircularQueue(HelpersTest):
+    """ ...
+    """
+    def test_1(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])

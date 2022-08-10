@@ -139,7 +139,7 @@ class Exchange:
     def get_balance(self, currency):
         """ ...
         """
-        return 0
+        return self._bank_roll.get_balance(currency)
 
     def get_quoted_fee(self, amount_quote, quote_currency):
         """ ...

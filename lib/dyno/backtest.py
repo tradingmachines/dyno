@@ -186,16 +186,20 @@ class Results:
     def winning_trades(self):
         """ ...
         """
-        return []
+        return list(filter(lambda x: x.won == True, self.trades()))
 
     def losing_trades(self):
         """ ...
         """
-        return []
+        return list(filter(lambda x: x.won == False, self.trades()))
 
-    def fees(self):
+    def all_fees(self):
         """ ...
         """
+
+        # return list of all fees paid
+        # ...
+
         return []
 
 
@@ -208,11 +212,12 @@ class Pipeline:
     def event(self, inputs):
         """ ...
         """
-        # ...
+        # fold left over list of pipeline stages
+        # do stage will call the stage with the previous stage's output
         foldl = lambda func, acc, xs: functools.reduce(func, xs, acc)
         do_stage = lambda acc, stage: stage(acc)
 
-        # ...
+        # call all stages, using "inputs" as the initial input
         final_output = foldl(do_stage, inputs, self._stages)
 
         return final_output
@@ -231,20 +236,22 @@ class Backtest:
     def execute(self, progress_bar=False):
         """ ...
         """
-        # ...
+        # system timestamp execute() was called
         start_ts_ns = time.time_ns()
 
         if progress_bar:
-            # ...
+            # count number of events, wrap self in tqdm
             count = sum([1 for _ in self._events.as_generator()])
             iterator = tqdm(self, total=count, desc="Events")
 
         else:
-            # ...
+            # just set iterator to self
             iterator = self
 
-        # ...
+        # create a list from the iterator
         states = [state for state in iterator]
+
+        # system timestamp exeucte() finished
         end_ts_ns = time.time_ns()
 
         return Results(start_ts_ns, end_ts_ns, states)
