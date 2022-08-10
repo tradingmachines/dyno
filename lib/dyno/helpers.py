@@ -81,27 +81,34 @@ class CircularQueue:
         things = self.get_head(count)
         return iter(things)
 
+    def is_empty(self):
+        """ ...
+        """
+        return self._counter == 0
+
     def insert(self, thing):
         """ ...
         """
         # create the new queue node
-        prev_node = self._head
-        next_node = self._tail
+        prev_node = self._tail
+        next_node = self._head
         node = QueueNode(prev_node, next_node, thing)
 
-        if self._head != None:
-            # update current head's next node
-            self._head.prev_node = node
-        else:
-            # append new node to the queue
+        if self.is_empty():
+            # set next and previous nodes to the node itself
+            node.next_node = node
+            node.prev_node = node
+
+            # node becomes head and tail of the queue
             self._head = node
+            self._tail = node
 
-        if self._tail != None:
-            # update current tail's previous node
+        else:
+            # replace the queue's tail node
             self._tail.next_node = node
+            self._tail = node
 
-        # append to queue and increment counter
-        self._tail = node
+        # increment node counter
         self._counter += 1
 
     def trim_head(self, n=1):
@@ -158,12 +165,12 @@ class CircularQueue:
         # get the head
         head = self._head
 
-        # ...
+        # the list of things to return
         things = []
 
         while n > 0:
             if head != None:
-                # ...
+                # append to list and update current head
                 things.append(head.thing)
                 head = head.next_node
 
@@ -181,14 +188,14 @@ class CircularQueue:
         # get the tail
         tail = self._tail
 
-        # ...
+        # the list of things to return
         things = []
 
         while n > 0:
             if tail != None:
-                # ...
+                # append to list and update current tail
                 things.append(tail.thing)
-                tail = tail.next_node
+                tail = tail.prev_node
 
             else:
                 # the queue is empty
@@ -202,22 +209,45 @@ class CircularQueue:
 class EventTimeWindow:
     """ ...
     """
-    def __init__(self, length_seconds):
-        self._length_seconds = length_seconds
+    def __init__(self, window_duration_seconds):
+        self._window_duration_secs = window_duration_seconds
         self._circular_queue = CircularQueue()
 
     def add_event(self, event_name, unix_ts_ns, inputs):
         """ ...
         """
-
         # append to queue
-        # ...
+        self._circular_queue.insert((event_name, unix_ts_ns, inputs))
 
-        # remove from tail of queue until different
-        # between head and tail is < length_seconds
-        # ...
+        # remove from tail of queue until difference
+        # between head and tail is < self._window_duration_secs
+        finished_trimming = False
 
-        pass
+        while not finished_trimming:
+            if self._circular_queue.is_empty():
+                # the queue is empty so finish trimming
+                finished_trimming = True
+
+            else:
+                # get head and tail of the queue
+                newest = self._curcular_queue.get_head()[0]
+                oldest = self._curcular_queue.get_tail()[0]
+
+                # extract event timestamps
+                newest_ts_ns = newest[1]
+                oldest_ts_ns = oldest[1]
+
+                # calculate difference in seconds
+                duration_ns = (newest_ts_ns - oldest_ts_ns)
+                duration_secs = duration_ns // 1_000_000_000
+
+                if duration_secs < self._window_duration_secs:
+                    # the differnece between head and tail's
+                    # timestamps is < self._window_duration_secs
+                    finished_trimming = True
+                else:
+                    # trim from end of the queue
+                    self._circular_queue.trim_tail()
 
     def get_window(self):
         """ ... 
@@ -228,11 +258,22 @@ class EventTimeWindow:
 class EventTimeSlidingWindow(EventTimeWindow):
     """ ...
     """
-    def __init__(self, length_seconds, step_seconds):
-        super().__init__(length_seconds)
-        self._step_seconds = step_seconds
+    def __init__(self, window_duration_seconds, window_step_seconds):
+        super().__init__(window_duration_seconds)
+        self._window_step_secs = window_step_seconds
 
-    def next_window(self):
+    def add_event(self, event_name, unix_ts_ns, inputs):
         """ ...
         """
-        return
+        super().add_event(event_name, unix_ts_ns, inputs)
+
+        # decide if should return a new window
+        # => self._window_step_secs has passed since last window
+        something = False
+
+        if something:
+            # ...
+            return []
+        else:
+            # ...
+            return None

@@ -141,4 +141,51 @@ class TestCircularQueue(HelpersTest):
         q.insert("b")
         q.insert("c")
 
+        print(q.get_tail(len(q)))
+
         self.assertTrue(list(q) == ["a", "b", "c"])
+        self.assertTrue(list(q) == q.get_head(len(q)))
+        self.assertTrue(q.get_tail(len(q)) == ["c", "b", "a"])
+
+    def test_2(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+
+        q.trim_head()
+
+        self.assertTrue(list(q) == ["b", "c"])
+
+        q.trim_head()
+
+        self.assertTrue(list(q) == ["c"])
+
+    def test_3(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+
+        q.trim_head(2)
+
+        self.assertTrue(list(q) == ["c"])
+
+    def test_4(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+
+        q.trim_head(3)
+
+        self.assertTrue(list(q) == [])
