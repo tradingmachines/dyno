@@ -240,8 +240,8 @@ class EventTimeWindow:
 
             else:
                 # get head and tail of the queue
-                newest = self._curcular_queue.get_head()[0]
-                oldest = self._curcular_queue.get_tail()[0]
+                newest = self._circular_queue.get_head()[0]
+                oldest = self._circular_queue.get_tail()[0]
 
                 # extract event timestamps
                 newest_ts_ns = newest[1]

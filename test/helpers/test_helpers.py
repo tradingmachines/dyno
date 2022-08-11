@@ -253,15 +253,38 @@ class TestEventTimeWindow(HelpersTest):
     """ ...
     """
     def test_1(self):
-        pass
+        w = EventTimeWindow(window_duration_seconds=60)
 
-    """ ...
-    """
+        w.add_event("test", 0, {})
+        w.add_event("test", 1, {})
+        w.add_event("test", 2, {})
+
+        self.assertTrue(w.get_window() == [
+            ("test", 0, {}),
+            ("test", 1, {}),
+            ("test", 2, {})])
+
     def test_2(self):
-        pass
+        w = EventTimeWindow(window_duration_seconds=60)
 
-    """ ...
-    """
+        w.add_event("test", 0, {})
+        w.add_event("test", 1, {})
+        w.add_event("test", 2, {})
+
+        self.assertTrue(w.get_window() == [
+            ("test", 0, {}),
+            ("test", 1, {}),
+            ("test", 2, {})])
+
+        w.add_event("test", 60000000000, {})
+        w.add_event("test", 60000000001, {})
+        w.add_event("test", 60000000002, {})
+
+        self.assertTrue(w.get_window() == [
+            ("test", 60000000000, {}),
+            ("test", 60000000001, {}),
+            ("test", 60000000002, {})])
+
     def test_3(self):
         pass
 
@@ -272,13 +295,8 @@ class TestEventTimeSlidingWindow(HelpersTest):
     def test_1(self):
         pass
 
-    """ ...
-    """
     def test_2(self):
         pass
 
-    """ ...
-    """
     def test_3(self):
         pass
-
