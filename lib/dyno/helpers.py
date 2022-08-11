@@ -114,15 +114,25 @@ class CircularQueue:
     def trim_head(self, n=1):
         """ ...
         """
-        # get the head
-        trimmed = self._head
+        if self.is_empty():
+            # cannot trim an empty queue
+            raise Exception("queue is empty")
 
-        if trimmed != None:
+        else:
             # queue is not empty
-            # set queue's head to current head's next node
-            # update counter
-            self._head = trimmed.next_node
-            self._counter -= 1
+            # get the head node
+            trimmed = self._head
+
+            if self._counter == 1:
+                # set head and tail to none
+                # reset node counter
+                self._head, self._tail = None, None
+                self._counter = 0
+            else:
+                # set head to trimmed next node
+                # decrement node counter
+                self._head = trimmed.next_node
+                self._counter -= 1
 
             if n > 1:
                 # recurse
@@ -131,22 +141,28 @@ class CircularQueue:
                 # base case
                 return [trimmed.thing]
 
-        else:
-            # cannot trim an empty queue
-            raise Exception("queue is empty")
-
     def trim_tail(self, n=1):
         """ ...
         """
-        # get the head
-        trimmed = self._tail
+        if self.is_empty():
+            # cannot trim an empty queue
+            raise Exception("queue is empty")
 
-        if trimmed != None:
+        else:
             # queue is not empty
-            # set queue's tail to current tail's previous node
-            # update counter
-            self._tail = trimmed.prev_node
-            self._counter -= 1
+            # get the tail node
+            trimmed = self._tail
+
+            if self._counter == 1:
+                # set head and tail to none
+                # reset node counter
+                self._head, self._tail = None, None
+                self._counter = 0
+            else:
+                # set tail to trimmed previous node
+                # decrement node counter
+                self._tail = trimmed.prev_node
+                self._counter -= 1
 
             if n > 1:
                 # recurse
@@ -154,10 +170,6 @@ class CircularQueue:
             else:
                 # base case
                 return [trimmed.thing]
-
-        else:
-            # cannot trim an empty queue
-            raise Exception("queue is empty")
 
     def get_head(self, n=1):
         """ ...
@@ -173,7 +185,6 @@ class CircularQueue:
                 # append to list and update current head
                 things.append(head.thing)
                 head = head.next_node
-
             else:
                 # the queue is empty
                 raise Exception("queue is empty")
@@ -196,7 +207,6 @@ class CircularQueue:
                 # append to list and update current tail
                 things.append(tail.thing)
                 tail = tail.prev_node
-
             else:
                 # the queue is empty
                 raise Exception("queue is empty")

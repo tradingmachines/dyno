@@ -141,8 +141,6 @@ class TestCircularQueue(HelpersTest):
         q.insert("b")
         q.insert("c")
 
-        print(q.get_tail(len(q)))
-
         self.assertTrue(list(q) == ["a", "b", "c"])
         self.assertTrue(list(q) == q.get_head(len(q)))
         self.assertTrue(q.get_tail(len(q)) == ["c", "b", "a"])
@@ -155,13 +153,9 @@ class TestCircularQueue(HelpersTest):
         q.insert("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
-
         q.trim_head()
-
         self.assertTrue(list(q) == ["b", "c"])
-
         q.trim_head()
-
         self.assertTrue(list(q) == ["c"])
 
     def test_3(self):
@@ -172,9 +166,7 @@ class TestCircularQueue(HelpersTest):
         q.insert("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
-
         q.trim_head(2)
-
         self.assertTrue(list(q) == ["c"])
 
     def test_4(self):
@@ -185,7 +177,108 @@ class TestCircularQueue(HelpersTest):
         q.insert("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
-
         q.trim_head(3)
-
         self.assertTrue(list(q) == [])
+
+    def test_5(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+        q.trim_tail()
+        self.assertTrue(list(q) == ["a", "b"])
+
+    def test_6(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+        q.trim_tail(2)
+        self.assertTrue(list(q) == ["a"])
+
+    def test_7(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+        q.trim_tail(3)
+        self.assertTrue(list(q) == [])
+
+    def test_8(self):
+        q = CircularQueue()
+
+        self.assertTrue(q.is_empty())
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+        self.assertFalse(q.is_empty())
+        q.trim_tail(3)
+        self.assertTrue(q.is_empty())
+
+    def test_9(self):
+        q = CircularQueue()
+
+        q.insert("a")
+        q.insert("b")
+        q.insert("c")
+
+        self.assertTrue(list(q) == ["a", "b", "c"])
+        q.trim_head(3)
+        self.assertTrue(list(q) == [])
+        self.assertRaises(Exception, q.get_head)
+        self.assertRaises(Exception, q.get_tail)
+
+        q.insert("x")
+        q.insert("y")
+        q.insert("z")
+
+        self.assertTrue(list(q) == ["x", "y", "z"])
+        self.assertTrue(q.get_head() == ["x"])
+        self.assertTrue(q.get_tail() == ["z"])
+
+
+class TestEventTimeWindow(HelpersTest):
+    """ ...
+    """
+    def test_1(self):
+        pass
+
+    """ ...
+    """
+    def test_2(self):
+        pass
+
+    """ ...
+    """
+    def test_3(self):
+        pass
+
+
+class TestEventTimeSlidingWindow(HelpersTest):
+    """ ...
+    """
+    def test_1(self):
+        pass
+
+    """ ...
+    """
+    def test_2(self):
+        pass
+
+    """ ...
+    """
+    def test_3(self):
+        pass
+
