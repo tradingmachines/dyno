@@ -86,7 +86,7 @@ class CircularQueue:
         """
         return self._counter == 0
 
-    def insert(self, thing):
+    def append(self, thing):
         """ ...
         """
         # create the new queue node
@@ -227,7 +227,7 @@ class EventTimeWindow:
         """ ...
         """
         # append to queue
-        self._circular_queue.insert((event_name, unix_ts_ns, inputs))
+        self._circular_queue.append((event_name, unix_ts_ns, inputs))
 
         # remove from tail of queue until difference
         # between head and tail is < self._window_duration_secs
@@ -240,8 +240,8 @@ class EventTimeWindow:
 
             else:
                 # get head and tail of the queue
-                newest = self._circular_queue.get_head()[0]
-                oldest = self._circular_queue.get_tail()[0]
+                newest = self._circular_queue.get_tail()[0]
+                oldest = self._circular_queue.get_head()[0]
 
                 # extract event timestamps
                 newest_ts_ns = newest[1]
@@ -256,8 +256,8 @@ class EventTimeWindow:
                     # timestamps is < self._window_duration_secs
                     finished_trimming = True
                 else:
-                    # trim from end of the queue
-                    self._circular_queue.trim_tail()
+                    # trim from beginning of the queue
+                    self._circular_queue.trim_head()
 
     def get_window(self):
         """ ... 
@@ -271,19 +271,37 @@ class EventTimeSlidingWindow(EventTimeWindow):
     def __init__(self, window_duration_seconds, window_step_seconds):
         super().__init__(window_duration_seconds)
         self._window_step_secs = window_step_seconds
+        self._window_start_ts_ns = None
 
     def add_event(self, event_name, unix_ts_ns, inputs):
         """ ...
         """
         super().add_event(event_name, unix_ts_ns, inputs)
 
-        # decide if should return a new window
-        # => self._window_step_secs has passed since last window
-        something = False
-
-        if something:
-            # ...
-            return []
-        else:
-            # ...
+        if self._window_start_ts_ns == None:
+            # no window has started yet
+            self._window_start_ts_ns = unix_ts_ns
             return None
+
+        else:
+            # calculate difference in seconds
+            duration_ns = (unix_ts_ns - self._window_start_ts_ns)
+            duration_secs = duration_ns // 1_000_000_000
+
+            if duration_secs < self._window_step_secs:
+                # duration since last window is <
+                # self._window_step_secs -> don't return a new
+                # window snapshot
+                return None
+            else:
+                # duration since last window is >=
+                # self._window_step_secs -> return a new window
+                # snapshot and reset window_start_ts_ns
+                start, end = self._window_start_ts_ns, unix_ts_ns
+
+                # the start of the next window will be set to
+                # the current event's timestamp
+                self._window_start_ts_ns = unix_ts_ns
+
+                # ((start ts, end ts), iterator)
+                return ((start, end), self.get_window())

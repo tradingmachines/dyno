@@ -137,9 +137,9 @@ class TestCircularQueue(HelpersTest):
     def test_1(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         self.assertTrue(list(q) == q.get_head(len(q)))
@@ -148,9 +148,9 @@ class TestCircularQueue(HelpersTest):
     def test_2(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         q.trim_head()
@@ -161,9 +161,9 @@ class TestCircularQueue(HelpersTest):
     def test_3(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         q.trim_head(2)
@@ -172,9 +172,9 @@ class TestCircularQueue(HelpersTest):
     def test_4(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         q.trim_head(3)
@@ -183,9 +183,9 @@ class TestCircularQueue(HelpersTest):
     def test_5(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         q.trim_tail()
@@ -194,9 +194,9 @@ class TestCircularQueue(HelpersTest):
     def test_6(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         q.trim_tail(2)
@@ -205,9 +205,9 @@ class TestCircularQueue(HelpersTest):
     def test_7(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         q.trim_tail(3)
@@ -218,9 +218,9 @@ class TestCircularQueue(HelpersTest):
 
         self.assertTrue(q.is_empty())
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         self.assertFalse(q.is_empty())
@@ -230,9 +230,9 @@ class TestCircularQueue(HelpersTest):
     def test_9(self):
         q = CircularQueue()
 
-        q.insert("a")
-        q.insert("b")
-        q.insert("c")
+        q.append("a")
+        q.append("b")
+        q.append("c")
 
         self.assertTrue(list(q) == ["a", "b", "c"])
         q.trim_head(3)
@@ -240,9 +240,9 @@ class TestCircularQueue(HelpersTest):
         self.assertRaises(Exception, q.get_head)
         self.assertRaises(Exception, q.get_tail)
 
-        q.insert("x")
-        q.insert("y")
-        q.insert("z")
+        q.append("x")
+        q.append("y")
+        q.append("z")
 
         self.assertTrue(list(q) == ["x", "y", "z"])
         self.assertTrue(q.get_head() == ["x"])
@@ -285,15 +285,27 @@ class TestEventTimeWindow(HelpersTest):
             ("test", 60000000001, {}),
             ("test", 60000000002, {})])
 
-    def test_3(self):
-        pass
-
 
 class TestEventTimeSlidingWindow(HelpersTest):
     """ ...
     """
     def test_1(self):
-        pass
+        w = EventTimeSlidingWindow(
+            window_duration_seconds=60,
+            window_step_seconds=5)
+
+        windows = []
+        seconds = 120
+
+        for i in range(seconds + 1):
+            second = 1_000_000_000 * i
+            ts = 1_000_000_000 + second
+            window = w.add_event("test", ts, {})
+
+            if window != None:
+                windows.append(window)
+
+        self.assertTrue(len(windows) == 24)
 
     def test_2(self):
         pass
