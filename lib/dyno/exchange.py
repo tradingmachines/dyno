@@ -146,12 +146,12 @@ class Exchange:
         """
         return 0
 
-    def get_quoted_min_trade_size(self, base_currency, quote_currency):
+    def get_min_trade_size(self, base_currency):
         """ ...
         """
         return 0
 
-    def get_quoted_max_trade_size(self, base_currency, quote_currency):
+    def get_max_trade_size(self, base_currency):
         """ ...
         """
         return 0

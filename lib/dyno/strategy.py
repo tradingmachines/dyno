@@ -172,75 +172,73 @@ class RiskStrategy(Strategy):
         f = (p / a) - (q / b)
         return f / 100
 
+    def trade(func):
+        def execute(self, unix_ts_ns, inputs):
+            # contextual info
+            market_id = inputs["market_id"]
+            exchange_name = inputs["exchange_name"]
+            quote_currency = inputs["quote_currency"]
+            base_currency = inputs["base_currency"]
+            price = inputs["price"]
+
+            # get balance of quote currency
+            exchange = self._exchanges[exchange_name]
+            balance = exchange.get_balance(quote_currency)
+
+            # calculate fraction of available balance to use
+            fraction = RiskStrategy.kelly_fraction(
+                inputs["confidence_pct"],
+                inputs["stop_loss_pct"],
+                inputs["take_profit_pct"])
+
+            # get min/max trade size in quote currency
+            minimum = exchange.get_min_trade_size(
+                base_currency, quote_currency)
+            maximum = exchange.get_max_trade_size(
+                base_currency, quote_currency)
+
+            # the fraction of available balance to use
+            amount = balance * fraction
+
+            if maximum > amount > minimum:
+                # the amount is between the min/max bounds
+                # call and return the decorated function
+                return func(unix_ts_ns, {
+                    "market_id": market_id,
+                    "exchange_name": exchange_name,
+                    "base_currency": base_currency,
+                    "quote_currency": quote_currency,
+                    "price": price,
+                    "amount": amount
+                })
+            else:
+                # amount is too small or too large
+                # don't execute the trade
+                return []
+
+        return execute
+
+    @trade
     def on_long(self, unix_ts_ns, inputs):
-        # calculate fraction of available balance to use
-        balance = 0
-        fraction = RiskStrategy.kelly_fraction(
-            inputs["confidence_pct"],
-            inputs["stop_loss_pct"],
-            inputs["take_profit_pct"])
+        return [
+            # the original long event + its inputs
+            ("long_executed", unix_ts_ns, inputs),
 
-        # ...
-        amount = balance * fraction
-        maximum = 0
-        minimum = 0
+            # return event: take from ask side of the order
+            # book for given exchange and market id
+            ("take_from_asks", unix_ts_ns, inputs)
+        ]
 
-        if maximum > amount > minimum:
-             # ...
-            return [
-                # the original long event + its inputs
-                ("long_executed", unix_ts_ns, inputs),
-
-                # return event: take from ask side of the order
-                # book for given exchange and market id
-                ("take_from_asks", unix_ts_ns, {
-                    "market_id": inputs["market_id"],
-                    "exchange_name": inputs["exchange_name"],
-                    "base_currency": inputs["base_currency"],
-                    "quote_currency": inputs["quote_currency"],
-                    "price": inputs["price"],
-                    "amount": amount
-                })
-            ]
-
-        else:
-            # ...
-            return []
-
+    @trade
     def on_short(self, unix_ts_ns, inputs):
-        # calculate fraction of available balance to use
-        balance = 0
-        fraction = RiskStrategy.kelly_fraction(
-            inputs["confidence_pct"],
-            inputs["stop_loss_pct"],
-            inputs["take_profit_pct"])
+        return [
+            # the original short event + its inputs
+            ("short_executed", unix_ts_ns, inputs),
 
-        # ...
-        amount = balance * fraction
-        maximum = 0
-        minimum = 0
-
-        if maximum > amount > minimum:
-            # ...
-            return [
-                # the original short event + its inputs
-                ("short_executed", unix_ts_ns, inputs),
-
-                # return event: take from bid side of the order
-                # book for given exchange and market id
-                ("take_from_bids", unix_ts_ns, {
-                    "market_id": inputs["market_id"],
-                    "exchange_name": inputs["exchange_name"],
-                    "base_currency": inputs["base_currency"],
-                    "quote_currency": inputs["quote_currency"],
-                    "price": inputs["price"],
-                    "amount": amount
-                })
-            ]
-
-        else:
-            # ...
-            return []
+            # return event: take from bid side of the order
+            # book for given exchange and market id
+            ("take_from_bids", unix_ts_ns, inputs)
+        ]
 
 
 class ExecutionStrategy(Strategy):

@@ -306,9 +306,3 @@ class TestEventTimeSlidingWindow(HelpersTest):
                 windows.append(window)
 
         self.assertTrue(len(windows) == 24)
-
-    def test_2(self):
-        pass
-
-    def test_3(self):
-        pass
