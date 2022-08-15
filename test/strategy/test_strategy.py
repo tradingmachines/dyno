@@ -88,10 +88,46 @@ class TestRiskStrategy(StrategyTest):
     """ ...
     """
     def test_1(self):
+        for confidence, negative, positive in [(0.7, 0.015, 0.035),
+                                               (0.65, 0.015, 0.035),
+                                               (0.50, 0.015, 0.035)]:
+
+            fraction = RiskStrategy.kelly_fraction(
+                confidence, negative, positive)
+
+            self.assertTrue(fraction > 0)
+
+    def test_2(self):
         s = RiskStrategy(self._exchanges)
 
-        # not finished
-        # ...
+        output = s.on_long(1, {
+            "market_id": 1,
+            "exchange_name": "EXCHANGE 1",
+            "base_currency": "BTC",
+            "quote_currency": "GBP",
+            "price": 100,
+            "confidence_pct": 0.7,
+            "stop_loss_pct": 0.015,
+            "take_profit_pct": 0.035
+        })
+
+        print(output)
+
+    def test_3(self):
+        s = RiskStrategy(self._exchanges)
+
+        output = s.on_short(1, {
+            "market_id": 1,
+            "exchange_name": "EXCHANGE 2",
+            "base_currency": "BTC",
+            "quote_currency": "GBP",
+            "price": 100,
+            "confidence_pct": 0.7,
+            "stop_loss_pct": 0.015,
+            "take_profit_pct": 0.035
+        })
+
+        print(output)
 
 
 class TestExecutionStrategy(StrategyTest):

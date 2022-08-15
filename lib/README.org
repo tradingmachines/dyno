@@ -27,6 +27,6 @@ Python libraries for light, dark, level4, and pipeworks APIs
 *** DONE event time sliding window
 
 ** [strategy] todo list
-*** TODO risk startegy class
+*** TODO risk strategy class
 *** TODO base execution strategy class
 *** TODO position strategy class

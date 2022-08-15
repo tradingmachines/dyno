@@ -76,7 +76,7 @@ class OrderBook:
 class BankRoll:
     """ ...
     """
-    def __init__(self, initial={}):
+    def __init__(self, initial):
         self._balances = initial
 
     def get_balance(self, currency):
@@ -103,10 +103,10 @@ class BankRoll:
 class Exchange:
     """ ...
     """
-    def __init__(self, name, fee_schedule):
+    def __init__(self, name, fee_schedule, initial_balances):
         self._name = name
         self._fee_schedule = fee_schedule
-        self._bank_roll = BankRoll()
+        self._bank_roll = BankRoll(initial_balances)
         self._order_books = {}
 
     def __str__(self):
@@ -146,12 +146,12 @@ class Exchange:
         """
         return 0
 
-    def get_min_trade_size(self, base_currency):
+    def get_min_trade_size(self, base_currency, quote_currency):
         """ ...
         """
         return 0
 
-    def get_max_trade_size(self, base_currency):
+    def get_max_trade_size(self, base_currency, quote_currency):
         """ ...
         """
         return 0

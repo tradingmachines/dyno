@@ -47,7 +47,7 @@ class DataStrategy(Strategy):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # contextual info
+            # unpack inputs
             exchange_name = inputs["exchange_name"]
             market_id = inputs["market_id"]
 
@@ -87,7 +87,7 @@ class DataStrategy(Strategy):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # contextual info
+            # unpack inputs
             market_id = inputs["market_id"]
             exchange_name = inputs["exchange_name"]
 
@@ -174,7 +174,7 @@ class RiskStrategy(Strategy):
 
     def trade(func):
         def execute(self, unix_ts_ns, inputs):
-            # contextual info
+            # unpack inputs
             market_id = inputs["market_id"]
             exchange_name = inputs["exchange_name"]
             quote_currency = inputs["quote_currency"]
@@ -191,13 +191,15 @@ class RiskStrategy(Strategy):
                 inputs["stop_loss_pct"],
                 inputs["take_profit_pct"])
 
-            # get min/max trade size in quote currency
-            minimum = exchange.get_min_trade_size(
-                base_currency, quote_currency)
-            maximum = exchange.get_max_trade_size(
-                base_currency, quote_currency)
+            # minimum trade size in quote currency
+            minimum = exchange.get_min_trade_size(base_currency,
+                                                  quote_currency)
 
-            # the fraction of available balance to use
+            # maximum trade size in quote currency
+            maximum = exchange.get_max_trade_size(base_currency,
+                                                  quote_currency)
+
+            # the fraction of available quote balance to use
             amount = balance * fraction
 
             if maximum > amount > minimum:
@@ -224,8 +226,7 @@ class RiskStrategy(Strategy):
             # the original long event + its inputs
             ("long_executed", unix_ts_ns, inputs),
 
-            # return event: take from ask side of the order
-            # book for given exchange and market id
+            # return event: take from ask side of the order book
             ("take_from_asks", unix_ts_ns, inputs)
         ]
 
@@ -235,8 +236,7 @@ class RiskStrategy(Strategy):
             # the original short event + its inputs
             ("short_executed", unix_ts_ns, inputs),
 
-            # return event: take from bid side of the order
-            # book for given exchange and market id
+            # return event: take from bid side of the order book
             ("take_from_bids", unix_ts_ns, inputs)
         ]
 
