@@ -111,7 +111,7 @@ class TestRiskStrategy(StrategyTest):
             "take_profit_pct": 0.035
         })
 
-        print(output)
+        self.assertTrue(len(output) == 2)
 
     def test_3(self):
         s = RiskStrategy(self._exchanges)
@@ -127,13 +127,25 @@ class TestRiskStrategy(StrategyTest):
             "take_profit_pct": 0.035
         })
 
-        print(output)
+        self.assertTrue(len(output) == 2)
 
 
 class TestExecutionStrategy(StrategyTest):
     """ ...
     """
     def test_1(self):
+        s = ExecutionStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
+    def test_2(self):
+        s = ExecutionStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
+    def test_3(self):
         s = ExecutionStrategy(self._exchanges)
 
         # not finished

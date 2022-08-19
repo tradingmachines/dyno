@@ -7,18 +7,34 @@ class TestExchange1(Exchange):
     """ ...
     """
     def __init__(self, initial_balances):
-        super().__init__("EXCHANGE 1",
-                         StaticFeeSchedule(0.01),
-                         initial_balances)
+        super().__init__(name="EXCHANGE 1",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 10000
+                                 }
+                             }
+                         })
 
 
 class TestExchange2(Exchange):
     """ ...
     """
     def __init__(self, initial_balances):
-        super().__init__("EXCHANGE 2",
-                         StaticFeeSchedule(0.05),
-                         initial_balances)
+        super().__init__(name="EXCHANGE 2",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 10000
+                                 }
+                             }
+                         })
 
 
 class StrategyTest(unittest.TestCase):
@@ -27,7 +43,7 @@ class StrategyTest(unittest.TestCase):
     def setUp(self):
         # ...
         initial_balances = {
-            "GBP": 1000,
+            "GBP": 2500,
             "BTC": 0.5
         }
 

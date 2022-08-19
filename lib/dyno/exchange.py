@@ -1,32 +1,51 @@
-class StaticFeeSchedule:
+class MakerTakerFeeSchedule:
+    """ ...
+    """
+    def __init__(self):
+        pass
+
+    def maker_fee(self, trade_size, quote_currency):
+        """ ...
+        """
+        return 0
+
+    def taker_fee(self, trade_size, quote_currency):
+        """ ...
+        """
+        return 0
+
+
+class StaticFeeSchedule(MakerTakerFeeSchedule):
     """ ...
     """
     def __init__(self, pct):
+        super().__init__()
         self._pct = pct
 
-    def maker_fee(self, trade_size):
+    def maker_fee(self, trade_size, quote_currency):
         """ ...
         """
         return 0
 
-    def taker_fee(self, trade_size):
+    def taker_fee(self, trade_size, quote_currency):
         """ ...
         """
         return 0
 
 
-class VolumeFeeSchedule:
+class VolumeFeeSchedule(MakerTakerFeeSchedule):
     """ ...
     """
     def __init__(self, levels):
+        super().__init__()
         self._levels = []
 
-    def maker_fee(self, trade_size):
+    def maker_fee(self, trade_size, quote_currency):
         """ ...
         """
         return 0
 
-    def taker_fee(self, trade_size):
+    def taker_fee(self, trade_size, quote_currency):
         """ ...
         """
         return 0
@@ -103,10 +122,11 @@ class BankRoll:
 class Exchange:
     """ ...
     """
-    def __init__(self, name, fee_schedule, initial_balances):
+    def __init__(self, name, initial_balances, fee_schedule, size_limits):
         self._name = name
         self._fee_schedule = fee_schedule
         self._bank_roll = BankRoll(initial_balances)
+        self._size_limits = size_limits
         self._order_books = {}
 
     def __str__(self):
@@ -141,20 +161,25 @@ class Exchange:
         """
         return self._bank_roll.get_balance(currency)
 
-    def get_quoted_fee(self, amount_quote, quote_currency):
+    def get_maker_quoted_fee(self, amount_quote, quote_currency):
         """ ...
         """
-        return 0
+        return self._fee_schedule.maker_fee(amount_quote, quote_currency)
+
+    def get_taker_quoted_fee(self, amount_quote, quote_currency):
+        """ ...
+        """
+        return self._fee_schedule.taker_fee(amount_quote, quote_currency)
 
     def get_min_trade_size(self, base_currency, quote_currency):
         """ ...
         """
-        return 0
+        return self._size_limits[base_currency][quote_currency]["minimum"]
 
     def get_max_trade_size(self, base_currency, quote_currency):
         """ ...
         """
-        return 0
+        return self._size_limits[base_currency][quote_currency]["maximum"]
 
     @create_order_book_if_not_exists
     def set_best_bid(self, market_id, price, liquidity):
@@ -172,82 +197,202 @@ class Exchange:
 class Binance(Exchange):
     """ ...
     """
-    def __init__(self):
-        super().__init__("Binance", StaticFeeSchedule(0.01))
+    def __init__(self, initial_balances):
+        super().__init__(name="Binance",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Bitfinex(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bitfinex", StaticFeeSchedule(0.01))
+        super().__init__(name="Bitfinex",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Bitflyer(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bitflyer", StaticFeeSchedule(0.01))
+        super().__init__(name="Bitflyer",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class BitMEX(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("BitMEX", StaticFeeSchedule(0.01))
+        super().__init__(name="BitMEX",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Bitstamp(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bitstamp", StaticFeeSchedule(0.01))
+        super().__init__(name="Bitstamp",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Bybit(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Bybit", StaticFeeSchedule(0.01))
+        super().__init__(name="Bybit",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Coinbase(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Coinbase", StaticFeeSchedule(0.01))
+        super().__init__(name="Coinbase",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class FTX(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("FTX", StaticFeeSchedule(0.01))
+        super().__init__(name="FTX",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Gemini(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Gemini", StaticFeeSchedule(0.01))
+        super().__init__(name="Gemini",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class HitBTC(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("HitBTC", StaticFeeSchedule(0.01))
+        super().__init__(name="HitBTC",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Kraken(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Kraken", StaticFeeSchedule(0.01))
+        super().__init__(name="Kraken",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })
 
 
 class Poloniex(Exchange):
     """ ...
     """
     def __init__(self):
-        super().__init__("Poloniex", StaticFeeSchedule(0.01))
+        super().__init__(name="Poloniex",
+                         initial_balances=initial_balances,
+                         fee_schedule=StaticFeeSchedule(0.01),
+                         size_limits={
+                             "BTC": {
+                                 "GBP": {
+                                     "minimum": 25,
+                                     "maximum": 350
+                                 }
+                             }
+                         })

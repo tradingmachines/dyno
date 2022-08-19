@@ -174,11 +174,18 @@ class RiskStrategy(Strategy):
 
     def trade(func):
         def execute(self, unix_ts_ns, inputs):
-            # unpack inputs
+            # contextual info
             market_id = inputs["market_id"]
             exchange_name = inputs["exchange_name"]
             quote_currency = inputs["quote_currency"]
             base_currency = inputs["base_currency"]
+
+            # risk parameters
+            confidence_pct = inputs["confidence_pct"]
+            stop_loss_pct = inputs["stop_loss_pct"]
+            take_profit_pct = inputs["take_profit_pct"]
+
+            # the entry price
             price = inputs["price"]
 
             # get balance of quote currency
@@ -186,10 +193,9 @@ class RiskStrategy(Strategy):
             balance = exchange.get_balance(quote_currency)
 
             # calculate fraction of available balance to use
-            fraction = RiskStrategy.kelly_fraction(
-                inputs["confidence_pct"],
-                inputs["stop_loss_pct"],
-                inputs["take_profit_pct"])
+            fraction = RiskStrategy.kelly_fraction(confidence_pct,
+                                                   stop_loss_pct,
+                                                   take_profit_pct)
 
             # minimum trade size in quote currency
             minimum = exchange.get_min_trade_size(base_currency,
@@ -200,18 +206,26 @@ class RiskStrategy(Strategy):
                                                   quote_currency)
 
             # the fraction of available quote balance to use
+            # and the fee for removing that liquidity from order book
             amount = balance * fraction
+            fee = exchange.get_taker_quoted_fee(amount, quote_currency)
 
-            if maximum > amount > minimum:
+            # need to make sure amount is between min/max bounds
+            # and account can cover trade fee (has amount + fee balance)
+            between_bounds = maximum > amount > minimum
+            balance_covers_fee = balance > amount + fee
+
+            if between_bounds and balance_covers_fee:
                 # the amount is between the min/max bounds
                 # call and return the decorated function
-                return func(unix_ts_ns, {
+                return func(self, unix_ts_ns, {
                     "market_id": market_id,
                     "exchange_name": exchange_name,
                     "base_currency": base_currency,
                     "quote_currency": quote_currency,
                     "price": price,
-                    "amount": amount
+                    "amount": amount,
+                    "fee": fee
                 })
             else:
                 # amount is too small or too large

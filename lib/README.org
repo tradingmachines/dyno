@@ -20,13 +20,14 @@ Python libraries for light, dark, level4, and pipeworks APIs
 
 ** [exchange] todo list
 *** TODO exchange class methods
-*** TODO realistic fee schedules for each exchange
+*** TODO realistic fee schedules for each exchange (currently all static)
 
 ** [helpers] todo list
 *** DONE circular queue
 *** DONE event time sliding window
 
 ** [strategy] todo list
-*** TODO risk strategy class
+*** DONE risk strategy class
+*** TODO calculate fees correctly (all zero at the moment)
 *** TODO base execution strategy class
 *** TODO position strategy class
