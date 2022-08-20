@@ -173,7 +173,7 @@ class RiskStrategy(Strategy):
         f = (p / a) - (q / b)
         return f / 100
 
-    def trade(func):
+    def enter_trade(func):
         def execute(self, unix_ts_ns, inputs):
             # contextual info
             market_id = inputs["market_id"]
@@ -209,12 +209,12 @@ class RiskStrategy(Strategy):
             # the fraction of available quote balance to use
             # and the fee for removing that liquidity from order book
             amount = balance * fraction
-            fee = exchange.get_taker_quoted_fee(amount, quote_currency)
+            entry_fee = exchange.get_taker_quoted_fee(amount, quote_currency)
 
             # need to make sure amount is between min/max bounds
-            # and account can cover trade fee (has amount + fee balance)
+            # and account can cover trade fee (amount + entry fee)
             between_bounds = maximum > amount > minimum
-            balance_covers_fee = balance > amount + fee
+            balance_covers_fee = balance > amount + entry_fee
 
             if between_bounds and balance_covers_fee:
                 # the amount is between the min/max bounds
@@ -225,17 +225,16 @@ class RiskStrategy(Strategy):
                     "base_currency": base_currency,
                     "quote_currency": quote_currency,
                     "price": price,
-                    "amount": amount,
-                    "fee": fee
+                    "amount": amount
                 })
             else:
-                # amount is too small or too large
+                # amount is too small, too large, or insufficient balance
                 # don't execute the trade
                 return []
 
         return execute
 
-    @trade
+    @enter_trade
     def on_long(self, unix_ts_ns, inputs):
         return [
             # the original long event + its inputs
@@ -245,7 +244,7 @@ class RiskStrategy(Strategy):
             ("take_from_asks", unix_ts_ns, inputs)
         ]
 
-    @trade
+    @enter_trade
     def on_short(self, unix_ts_ns, inputs):
         return [
             # the original short event + its inputs
@@ -298,7 +297,9 @@ class ExecutionStrategy(Strategy):
         self._bid_queue = BidQueue()
         self._ask_queue = AskQueue()
 
-    def match_algorithm(self, queue, get_best_price, is_within_bounds):
+    def match_algorithm(self, queue, unix_ts_ns,
+                        get_best_price, is_within_bounds):
+
         # flag will be true when best price is outside
         # the order's price threshold
         stop = False
@@ -344,14 +345,14 @@ class ExecutionStrategy(Strategy):
                 exchange.add_to_balance(next_order["base_currency"],
                                         amount / best_price)
 
-                # append to successful_fills
-                successful_fills.append({
+                # append event to successful_fills
+                successful_fills.append(("took_from_", unix_ts_ns, {
                     "market_id": next_order["market_id"],
                     "exchange_name": next_order["exchange_name"],
                     "price": next_order["price"],
                     "amount": amount,
                     "fee": fee
-                })
+                }))
 
                 if next_order["remaining"] > 0:
                     # put remaining amount back in the queue for a
@@ -372,7 +373,7 @@ class ExecutionStrategy(Strategy):
             # match bid queue ordered by price: lowest -> highest
             successful_fills = \
                 self.match_algorithm(
-                    self._bid_queue,
+                    self._bid_queue, unix_ts_ns,
                     lambda exchange, market_id: exchange.get_best_bid(market_id),
                     lambda best_price, threshold: best_price >= threshold)
 
@@ -388,7 +389,7 @@ class ExecutionStrategy(Strategy):
             # match ask queue ordered by price: highest -> lowest
             successful_fills = \
                 self.match_algorithm(
-                    self._ask_queue,
+                    self._ask_queue, unix_ts_ns,
                     lambda exchange, market_id: exchange.get_best_ask(market_id),
                     lambda best_price, threshold: best_price <= threshold)
 
@@ -457,13 +458,35 @@ class PositionStrategy(Strategy):
 
     def check_positions(func):
         def check(self, unix_ts_ns, inputs):
-            # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
 
-            # do work here
+            # consider all open longs and shorts
             # ...
 
-            return events
+            # decide if position should be closed
+            # ...
+
+            # make sure account has enough balance to cover fees
+            # when exiting position
+            # ...
+
+            exit_fee = 0
+            balance_covers_fee = False
+
+            if balance_covers_fee:
+                # ...
+                # call and return the decorated function
+                return func(self, unix_ts_ns, {
+                    "market_id": market_id,
+                    "exchange_name": exchange_name,
+                    "base_currency": base_currency,
+                    "quote_currency": quote_currency,
+                    "price": price,
+                    "amount": amount
+                })
+            else:
+                # insufficient balance
+                # don't execute the trade
+                return []
 
         return check
 

@@ -19,7 +19,7 @@ Python libraries for light, dark, level4, and pipeworks APIs
 *** TODO ensemble class -> summarising multiple result objects
 
 ** [exchange] todo list
-*** TODO exchange class methods
+*** TODO finish exchange class methods
 *** TODO realistic fee schedules for each exchange (currently all static)
 
 ** [helpers] todo list
@@ -27,7 +27,7 @@ Python libraries for light, dark, level4, and pipeworks APIs
 *** DONE event time sliding window
 
 ** [strategy] todo list
-*** DONE risk strategy class
 *** TODO calculate fees correctly (all zero at the moment)
-*** TODO base execution strategy class
 *** TODO position strategy class
+*** DONE base execution strategy class
+*** DONE risk strategy class
