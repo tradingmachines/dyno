@@ -1,4 +1,5 @@
 import math
+import heapq
 
 
 class Strategy:
@@ -255,27 +256,102 @@ class RiskStrategy(Strategy):
         ]
 
 
+class BidQueue:
+    """ ...
+    """
+    def __init__(self):
+        self._min_heap = []
+
+
+class AskQueue:
+    """ ...
+    """
+    def __init__(self):
+        self._max_heap = []
+
+
 class ExecutionStrategy(Strategy):
     """ ...
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
-        self._bid_queue = []
-        self._ask_queue = []
+        self._bid_queue = BidQueue()
+        self._ask_queue = AskQueue()
 
     @staticmethod
-    def match_algorithm():
-        return []
+    def match_algorithm(queue, exchanges, get_best_price, is_within_bounds):
+        # flag will be true when best price is outside
+        # the order's price threshold
+        stop = False
+
+        # list of fills to return with events
+        successful_fills = []
+
+        while not (queue.is_empty() or stop):
+            # get next order to match from queue
+            next_order = queue.pop()
+
+            # exchange to execute order on
+            exchange = exchanges[next_order["exchange_name"]]
+
+            # current best price and liquid available
+            best_price, available_liquidity = \
+                get_best_price(exchange, next_order["market_id"])
+
+            if is_within_bounds(best_price, next_order["price"]):
+                # price is within order price threshold
+                if available_liquidity >= next_order["amount"] / best_price:
+                    # set amount to fill entirely
+                    amount = next_order["amount"]
+                else:
+                    # set amount to partial fill
+                    amount = available_liquidity * best_price
+
+                # subtract amount from order's remaining
+                next_order["remaining"] -= amount
+
+                # subtract amount from book's available liquidity
+                # ...
+
+                # calculate fee and subtract it from account balance
+                # ...
+
+                # add amount to account balance
+                # ...
+
+                # append to successful_fills
+                successful_fills.append({
+                    "market_id": next_order["market_id"],
+                    "exchange_name": next_order["exchange_name"],
+                    "price": next_order["price"],
+                    "amount": amount,
+                    "fee": fee
+                })
+
+                if next_order["remaining"] > 0:
+                    # put remaining amount back in the queue for a
+                    # partial match in the future
+                    queue.append(next_order)
+
+            else:
+                # price is too low, stop matching
+                stop = True
+
+        return successful_fills
 
     def trigger_bid_matches(func):
         def match(self, unix_ts_ns, inputs):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # do work here
-            # ...
+            # match bid queue ordered by price: lowest -> highest
+            successful_fills = \
+                ExecutionStrategy.match_algorithm(
+                    self._exchanges, self._bid_queue,
+                    lambda exchange, market_id: exchange.get_best_bid(market_id),
+                    lambda best_price, threshold: best_price >= threshold)
 
-            return events
+            return events + successful_fills
 
         return match
 
@@ -284,10 +360,14 @@ class ExecutionStrategy(Strategy):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # do work here
-            # ...
+            # match ask queue ordered by price: highest -> lowest
+            successful_fills = \
+                ExecutionStrategy.match_algorithm(
+                    self._exchanges, self._ask_queue,
+                    lambda exchange, market_id: exchange.get_best_ask(market_id),
+                    lambda best_price, threshold: best_price <= threshold)
 
-            return events
+            return events + successful_fills
 
         return match
 
