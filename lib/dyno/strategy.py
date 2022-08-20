@@ -262,12 +262,32 @@ class BidQueue:
     def __init__(self):
         self._min_heap = []
 
+    def append(self, price, inputs):
+        """ ...
+        """
+        pass
+
+    def pop(self):
+        """ ...
+        """
+        return
+
 
 class AskQueue:
     """ ...
     """
     def __init__(self):
         self._max_heap = []
+
+    def append(self, price, inputs):
+        """ ...
+        """
+        pass
+
+    def pop(self):
+        """ ...
+        """
+        return
 
 
 class ExecutionStrategy(Strategy):
@@ -278,8 +298,7 @@ class ExecutionStrategy(Strategy):
         self._bid_queue = BidQueue()
         self._ask_queue = AskQueue()
 
-    @staticmethod
-    def match_algorithm(queue, exchanges, get_best_price, is_within_bounds):
+    def match_algorithm(self, queue, get_best_price, is_within_bounds):
         # flag will be true when best price is outside
         # the order's price threshold
         stop = False
@@ -292,7 +311,7 @@ class ExecutionStrategy(Strategy):
             next_order = queue.pop()
 
             # exchange to execute order on
-            exchange = exchanges[next_order["exchange_name"]]
+            exchange = self._exchanges[next_order["exchange_name"]]
 
             # current best price and liquid available
             best_price, available_liquidity = \
@@ -307,17 +326,23 @@ class ExecutionStrategy(Strategy):
                     # set amount to partial fill
                     amount = available_liquidity * best_price
 
-                # subtract amount from order's remaining
+                # calculate fee
+                fee = exchange.get_taker_quoted_fee(
+                    amount, next_order["quote_currency"])
+
+                # subtract amount from order's remaining size
                 next_order["remaining"] -= amount
 
-                # subtract amount from book's available liquidity
-                # ...
+                # subtract fee from account balance
+                exchange.sub_from_balance(next_order["quote_currency"], fee)
 
-                # calculate fee and subtract it from account balance
-                # ...
+                # subtract amount from book's available liquidity
+                exchange.remove_liquidity(next_order["market_id"],
+                                          amount / best_price)
 
                 # add amount to account balance
-                # ...
+                exchange.add_to_balance(next_order["base_currency"],
+                                        amount / best_price)
 
                 # append to successful_fills
                 successful_fills.append({
@@ -334,7 +359,7 @@ class ExecutionStrategy(Strategy):
                     queue.append(next_order)
 
             else:
-                # price is too low, stop matching
+                # price is outside the threshold, so stop matching
                 stop = True
 
         return successful_fills
@@ -346,8 +371,8 @@ class ExecutionStrategy(Strategy):
 
             # match bid queue ordered by price: lowest -> highest
             successful_fills = \
-                ExecutionStrategy.match_algorithm(
-                    self._exchanges, self._bid_queue,
+                self.match_algorithm(
+                    self._bid_queue,
                     lambda exchange, market_id: exchange.get_best_bid(market_id),
                     lambda best_price, threshold: best_price >= threshold)
 
@@ -362,8 +387,8 @@ class ExecutionStrategy(Strategy):
 
             # match ask queue ordered by price: highest -> lowest
             successful_fills = \
-                ExecutionStrategy.match_algorithm(
-                    self._exchanges, self._ask_queue,
+                self.match_algorithm(
+                    self._ask_queue,
                     lambda exchange, market_id: exchange.get_best_ask(market_id),
                     lambda best_price, threshold: best_price <= threshold)
 

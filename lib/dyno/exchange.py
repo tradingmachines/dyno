@@ -144,6 +144,21 @@ class Exchange:
 
         return check_order_book
 
+    def sub_from_balance(self, market_id, amount):
+        """ ...
+        """
+        pass
+
+    def add_to_balance(self, market_id, amount):
+        """ ...
+        """
+        pass
+
+    def remove_liquidity(self, market_id, amount):
+        """ ...
+        """
+        pass
+
     def get_best_bid_price(self, market_id):
         """ ...
         """
