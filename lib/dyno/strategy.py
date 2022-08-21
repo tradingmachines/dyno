@@ -207,14 +207,14 @@ class RiskStrategy(Strategy):
                                                   quote_currency)
 
             # the fraction of available quote balance to use
-            # and the fee for removing that liquidity from order book
+            # and the fee for removing that liquidity from the order book
             amount = balance * fraction
-            entry_fee = exchange.get_taker_quoted_fee(amount, quote_currency)
+            fee = exchange.get_taker_quoted_fee(amount, quote_currency)
 
             # need to make sure amount is between min/max bounds
-            # and account can cover trade fee (amount + entry fee)
+            # and account can cover trade fee (amount + fee)
             between_bounds = maximum > amount > minimum
-            balance_covers_fee = balance > amount + entry_fee
+            balance_covers_fee = balance > amount + fee
 
             if between_bounds and balance_covers_fee:
                 # the amount is between the min/max bounds
@@ -228,8 +228,8 @@ class RiskStrategy(Strategy):
                     "amount": amount
                 })
             else:
-                # amount is too small, too large, or insufficient balance
-                # don't execute the trade
+                # amount is too small, too large, or account has
+                # insufficient balance: don't execute the trade
                 return []
 
         return execute
@@ -264,12 +264,13 @@ class BidQueue:
     def append(self, price, inputs):
         """ ...
         """
-        pass
+        heapq.heappush(self._min_heap, (price, inputs))
 
     def pop(self):
         """ ...
         """
-        return
+        price, inputs = heapq.heappop(self._max_heap)
+        return inputs
 
 
 class AskQueue:
@@ -281,12 +282,13 @@ class AskQueue:
     def append(self, price, inputs):
         """ ...
         """
-        pass
+        heapq.heappush(self._max_heap, (price, inputs))
 
     def pop(self):
         """ ...
         """
-        return
+        price, inputs = heapq.heappop(self._max_heap)
+        return inputs
 
 
 class ExecutionStrategy(Strategy):
@@ -302,19 +304,19 @@ class ExecutionStrategy(Strategy):
 
         # flag will be true when best price is outside
         # the order's price threshold
-        stop = False
+        should_stop = False
 
         # list of fills to return with events
         successful_fills = []
 
-        while not (queue.is_empty() or stop):
+        while not (queue.is_empty() or should_stop):
             # get next order to match from queue
             next_order = queue.pop()
 
             # exchange to execute order on
             exchange = self._exchanges[next_order["exchange_name"]]
 
-            # current best price and liquid available
+            # current best price and liquidity available
             best_price, available_liquidity = \
                 get_best_price(exchange, next_order["market_id"])
 
@@ -346,7 +348,7 @@ class ExecutionStrategy(Strategy):
                                         amount / best_price)
 
                 # append event to successful_fills
-                successful_fills.append(("took_from_", unix_ts_ns, {
+                successful_fills.append(("fill", unix_ts_ns, {
                     "market_id": next_order["market_id"],
                     "exchange_name": next_order["exchange_name"],
                     "price": next_order["price"],
@@ -361,7 +363,7 @@ class ExecutionStrategy(Strategy):
 
             else:
                 # price is outside the threshold, so stop matching
-                stop = True
+                should_stop = True
 
         return successful_fills
 
@@ -453,17 +455,20 @@ class PositionStrategy(Strategy):
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
-        self._long_positions = []
-        self._short_positions = []
+        self._open_longs = []
+        self._open_shorts = []
 
     def check_positions(func):
         def check(self, unix_ts_ns, inputs):
+            # consider all open long positions
+            for position in self._open_longs:
+                if should_close(position):
+                    pass
 
-            # consider all open longs and shorts
-            # ...
-
-            # decide if position should be closed
-            # ...
+            # consider all open short positions
+            for position in self._open_shorts:
+                if should_close(position):
+                    pass
 
             # make sure account has enough balance to cover fees
             # when exiting position
@@ -497,20 +502,6 @@ class PositionStrategy(Strategy):
     @check_positions
     def on_best_ask(self, unix_ts_ns, inputs):
         return super().on_best_ask(unix_ts_ns, inputs)
-
-    def on_bid_fill(self, unix_ts_ns, inputs):
-
-        # liquidity was removed from the bid side
-        # ...
-        
-        return []
-
-    def on_ask_fill(self, unix_ts_ns, inputs):
-
-        # liquidity was removed from the ask side
-        # ...
-
-        return []
 
 
 class ExitStrategy(ExecutionStrategy):
