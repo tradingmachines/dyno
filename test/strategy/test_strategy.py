@@ -161,6 +161,18 @@ class TestEntryStrategy(StrategyTest):
         # not finished
         # ...
 
+    def test_2(self):
+        s = EntryStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
+    def test_3(self):
+        s = EntryStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
 
 class TestPositionStrategy(StrategyTest):
     """ ...
@@ -171,11 +183,35 @@ class TestPositionStrategy(StrategyTest):
         # not finished
         # ...
 
+    def test_2(self):
+        s = PositionStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
+    def test_3(self):
+        s = PositionStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
 
 class TestExitStrategy(StrategyTest):
     """ ...
     """
     def test_1(self):
+        s = ExitStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
+    def test_2(self):
+        s = ExitStrategy(self._exchanges)
+
+        # not finished
+        # ...
+
+    def test_3(self):
         s = ExitStrategy(self._exchanges)
 
         # not finished

@@ -106,17 +106,26 @@ class BankRoll:
     def set_balance(self, currency, amount):
         """ ...
         """
-        self._balances[currency] = amount
+        if amount < 0:
+            raise Exception("balance cannot be negative")
+        else:
+            self._balances[currency] = amount
 
     def add_to_balance(self, currency, amount):
         """ ...
         """
-        self._balances[currency] += amount
+        if self._balances[currency] + amount < 0:
+            raise Exception("balance cannot be negative")
+        else:
+            self._balances[currency] += amount
 
     def sub_from_balance(self, currency, amount):
         """ ...
         """
-        self._balances[currency] -= amount
+        if self._balances[currency] - amount < 0:
+            raise Exception("balance cannot be negative")
+        else:
+            self._balances[currency] -= amount
 
 
 class Exchange:

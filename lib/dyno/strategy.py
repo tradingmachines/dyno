@@ -455,45 +455,54 @@ class PositionStrategy(Strategy):
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
-        self._open_longs = []
-        self._open_shorts = []
+        self._open_positions = []
+
+    @staticmethod
+    def should_close(position):
+        return False
+
+    @staticmethod
+    def close(position):
+
+        # make sure account has enough balance to cover fees
+        # when exiting position
+        # ...
+
+        exit_fee = 0
+        balance_covers_fee = False
+
+        if balance_covers_fee:
+            # call and return the decorated function
+            return func(self, unix_ts_ns, {
+                "market_id": market_id,
+                "exchange_name": exchange_name,
+                "base_currency": base_currency,
+                "quote_currency": quote_currency,
+                "price": price,
+                "amount": amount
+            })
+
+        else:
+            # insufficient balance
+            # don't execute the trade
+            return []
 
     def check_positions(func):
         def check(self, unix_ts_ns, inputs):
-            # consider all open long positions
-            for position in self._open_longs:
+            # the positions that were closed
+            successfully_closed = []
+
+            # consider all positions
+            for position in self._open_positions:
                 if should_close(position):
-                    pass
+                    close(position)
 
-            # consider all open short positions
-            for position in self._open_shorts:
-                if should_close(position):
-                    pass
-
-            # make sure account has enough balance to cover fees
-            # when exiting position
-            # ...
-
-            exit_fee = 0
-            balance_covers_fee = False
-
-            if balance_covers_fee:
-                # ...
-                # call and return the decorated function
-                return func(self, unix_ts_ns, {
-                    "market_id": market_id,
-                    "exchange_name": exchange_name,
-                    "base_currency": base_currency,
-                    "quote_currency": quote_currency,
-                    "price": price,
-                    "amount": amount
-                })
-            else:
-                # insufficient balance
-                # don't execute the trade
-                return []
+            return successfully_closed
 
         return check
+
+    def on_fill(self, unix_ts_ns, inputs):
+        pass
 
     @check_positions
     def on_best_bid(self, unix_ts_ns, inputs):
