@@ -299,8 +299,11 @@ class ExecutionStrategy(Strategy):
         self._bid_queue = BidQueue()
         self._ask_queue = AskQueue()
 
-    def match_algorithm(self, queue, unix_ts_ns,
-                        get_best_price, is_within_bounds):
+    def match_algorithm(exchanges,
+                        queue,
+                        unix_ts_ns,
+                        get_best_price,
+                        is_within_bounds):
 
         # flag will be true when best price is outside
         # the order's price threshold
@@ -314,7 +317,7 @@ class ExecutionStrategy(Strategy):
             next_order = queue.pop()
 
             # exchange to execute order on
-            exchange = self._exchanges[next_order["exchange_name"]]
+            exchange = exchanges[next_order["exchange_name"]]
 
             # current best price and liquidity available
             best_price, available_liquidity = \
@@ -367,17 +370,42 @@ class ExecutionStrategy(Strategy):
 
         return successful_fills
 
+    def remove_expired(func):
+        def remove(self, unix_ts_ns, inputs):
+
+            # remove orders from queue if the difference between
+            # the time they were added and unix_ts_ns is greater
+            # than some threshold i.e. they timeout
+            # ...
+
+            pass
+
+        return remove
+
     def trigger_bid_matches(func):
         def match(self, unix_ts_ns, inputs):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
+            # exchanges to use and order queue
+            exchanges = self._exchanges
+            queue = self._bid_queue
+
+            # get best bid price
+            best_price = \
+                lambda exchange, market_id: exchange.get_best_bid(market_id)
+
+            # check if price is above threshold
+            within_bounds = \
+                lambda best_price, threshold: best_price >= threshold
+
             # match bid queue ordered by price: lowest -> highest
             successful_fills = \
-                self.match_algorithm(
-                    self._bid_queue, unix_ts_ns,
-                    lambda exchange, market_id: exchange.get_best_bid(market_id),
-                    lambda best_price, threshold: best_price >= threshold)
+                self.match_algorithm(exchanges,
+                                     queue,
+                                     unix_ts_ns,
+                                     best_price,
+                                     within_bounds)
 
             return events + successful_fills
 
@@ -388,21 +416,36 @@ class ExecutionStrategy(Strategy):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # match ask queue ordered by price: highest -> lowest
+            # exchanges to use and order queue
+            exchanges = self._exchanges
+            queue = self._ask_queue
+
+            # get best ask price
+            best_price = \
+                lambda exchange, market_id: exchange.get_best_ask(market_id)
+
+            # check if price is below threshold
+            within_bounds = \
+                lambda best_price, threshold: best_price <= threshold)
+
+            # match bid queue ordered by price: lowest -> highest
             successful_fills = \
-                self.match_algorithm(
-                    self._ask_queue, unix_ts_ns,
-                    lambda exchange, market_id: exchange.get_best_ask(market_id),
-                    lambda best_price, threshold: best_price <= threshold)
+                self.match_algorithm(exchanges,
+                                     queue,
+                                     unix_ts_ns,
+                                     best_price,
+                                     within_bounds)
 
             return events + successful_fills
 
         return match
 
+    @remove_expired
     @trigger_bid_matches
     def on_best_bid(self, unix_ts_ns, inputs):
         return super().on_best_bid(unix_ts_ns, inputs)
 
+    @remove_expired
     @trigger_ask_matches
     def on_best_ask(self, unix_ts_ns, inputs):
         return super().on_best_ask(unix_ts_ns, inputs)
@@ -455,7 +498,16 @@ class PositionStrategy(Strategy):
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
-        self._open_positions = []
+        self._open_longs = {}
+        self._open_shorts = {}
+
+    @staticmethod
+    def vwap(fills):
+        return
+
+    @staticmethod
+    def can_close(position):
+        return False
 
     @staticmethod
     def should_close(position):
@@ -487,28 +539,93 @@ class PositionStrategy(Strategy):
             # don't execute the trade
             return []
 
-    def check_positions(func):
+    def check_all_positions(func):
         def check(self, unix_ts_ns, inputs):
             # the positions that were closed
             successfully_closed = []
 
-            # consider all positions
-            for position in self._open_positions:
-                if should_close(position):
-                    close(position)
+            # get map of all positions
+            open_positions = \
+                {**self._open_longs, **self._open_shorts}
+
+            for _, position in open_positions:
+                if can_close(position) and should_close(position):
+                    # cancel remaining entry orders
+                    # ...
+
+                    # close the position
+                    closed = close(position)
+                    successfully_closed.append(closed)
 
             return successfully_closed
 
         return check
 
-    def on_fill(self, unix_ts_ns, inputs):
-        pass
+    def on_long_executed(self, unix_ts_ns, inputs):
+        # add long to map of open long positions
+        # mapping current unix time -> meta data
+        self._open_longs[unix_ts_ns] = {
+            "fills": [],
+            "amount": inputs["amount"],
+            "exchange_name": inputs["exchange_name"],
+            "market_id": inputs["market_id"],
+            "stop_loss_pct_decrease": inputs["stop_loss_pct"],
+            "take_profit_pct_increase": inputs["take_profit_pct"]
+        }
 
-    @check_positions
+        return [
+            ("long_executed", unix_ts_ns, inputs)
+        ]
+
+    def on_ask_fill(self, unix_ts_ns, inputs):
+        # get position's fills
+        fills = self._open_longs[inputs["position_ts"]]["fills"]
+
+        # append to fills
+        fills.append({
+            "fill_price": inputs["price"],
+            "amount": inputs["amount"]
+        })
+
+        return [
+            ("ask_fill", unix_ts_ns, inputs)
+        ]
+
+    def on_short_executed(self, unix_ts_ns, inputs):
+        # add short to map of open short positions
+        # mapping current unix time -> meta data
+        self._open_shorts[unix_ts_ns] = {
+            "fills": [],
+            "amount": inputs["amount"],
+            "exchange_name": inputs["exchange_name"],
+            "market_id": inputs["market_id"],
+            "stop_loss_pct_increase": inputs["stop_loss_pct"],
+            "take_profit_pct_decrease": inputs["take_profit_pct"]
+        }
+
+        return [
+            ("short_executed", unix_ts_ns, inputs)
+        ]
+
+    def on_bid_fill(self, unix_ts_ns, inputs):
+        # get position's fills
+        fills = self._open_shorts[inputs["position_ts"]]["fills"]
+
+        # append to fills
+        fills.append({
+            "fill_price": inputs["price"],
+            "amount": inputs["amount"]
+        })
+
+        return [
+            ("bid_fill", unix_ts_ns, inputs)
+        ]
+
+    @check_all_positions
     def on_best_bid(self, unix_ts_ns, inputs):
         return super().on_best_bid(unix_ts_ns, inputs)
 
-    @check_positions
+    @check_all_positions
     def on_best_ask(self, unix_ts_ns, inputs):
         return super().on_best_ask(unix_ts_ns, inputs)
 
