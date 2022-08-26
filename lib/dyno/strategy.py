@@ -314,9 +314,8 @@ class ExecutionStrategy(Strategy):
 
         while not (queue.is_empty() or should_stop):
             # get next order to match from queue
+            # and exchange to execute order on
             next_order = queue.pop()
-
-            # exchange to execute order on
             exchange = exchanges[next_order["exchange_name"]]
 
             # current best price and liquidity available
@@ -370,44 +369,22 @@ class ExecutionStrategy(Strategy):
 
         return successful_fills
 
-    def remove_expired(func):
-        def remove(self, unix_ts_ns, inputs):
-
-            # remove orders from queue if the difference between
-            # the time they were added and unix_ts_ns is greater
-            # than some threshold i.e. they timeout
-            # ...
-
-            pass
-
-        return remove
-
     def trigger_bid_matches(func):
         def match(self, unix_ts_ns, inputs):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # exchanges to use and order queue
-            exchanges = self._exchanges
-            queue = self._bid_queue
+            # exchanges to and relevant order queue
+            exchanges, queue = self._exchanges, self._bid_queue
 
-            # get best bid price
-            best_price = \
-                lambda exchange, market_id: exchange.get_best_bid(market_id)
+            # match against bid queue
+            # ordered by price: lowest -> highest
+            fills = []
 
-            # check if price is above threshold
-            within_bounds = \
-                lambda best_price, threshold: best_price >= threshold
+            # need to redo match algorithm
+            # ...
 
-            # match bid queue ordered by price: lowest -> highest
-            successful_fills = \
-                self.match_algorithm(exchanges,
-                                     queue,
-                                     unix_ts_ns,
-                                     best_price,
-                                     within_bounds)
-
-            return events + successful_fills
+            return events + fills
 
         return match
 
@@ -416,36 +393,24 @@ class ExecutionStrategy(Strategy):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # exchanges to use and order queue
-            exchanges = self._exchanges
-            queue = self._ask_queue
+            # exchanges and relevant order queue
+            exchanges, queue = self._exchanges, self._ask_queue
 
-            # get best ask price
-            best_price = \
-                lambda exchange, market_id: exchange.get_best_ask(market_id)
+            # match against ask queue
+            # ordered by price: highest -> lowest
+            fills = []
 
-            # check if price is below threshold
-            within_bounds = \
-                lambda best_price, threshold: best_price <= threshold)
+            # need to redo match algorithm
+            # ...
 
-            # match bid queue ordered by price: lowest -> highest
-            successful_fills = \
-                self.match_algorithm(exchanges,
-                                     queue,
-                                     unix_ts_ns,
-                                     best_price,
-                                     within_bounds)
-
-            return events + successful_fills
+            return events + fills
 
         return match
 
-    @remove_expired
     @trigger_bid_matches
     def on_best_bid(self, unix_ts_ns, inputs):
         return super().on_best_bid(unix_ts_ns, inputs)
 
-    @remove_expired
     @trigger_ask_matches
     def on_best_ask(self, unix_ts_ns, inputs):
         return super().on_best_ask(unix_ts_ns, inputs)
