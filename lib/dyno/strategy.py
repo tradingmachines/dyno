@@ -301,50 +301,28 @@ class ExecutionStrategy(Strategy):
 
     @staticmethod
     def match(exchange, next_order, best_price, liquidity):
-        # ...
-        fills = []
-
-        if liquidity >= next_order["amount"] / best_price:
-            # set amount to fill entirely
-            amount = next_order["amount"]
-        else:
-            # set amount to partial fill
-            amount = available_liquidity * best_price
+        # set amount to fill entirely / partial fill
+        amount = next_order["remaining"] \
+            if liquidity >= next_order["remaining"] / best_price
+            else available_liquidity * best_price
 
         # calculate fee
         fee = exchange.get_taker_quoted_fee(
             amount, next_order["quote_currency"])
 
-        # subtract amount from order's remaining size
-        next_order["remaining"] -= amount
+        # subtract amount from book's available liquidity
+        exchange.remove_liquidity(
+            next_order["market_id"], amount / best_price)
 
         # subtract fee from account balance
         exchange.sub_from_balance(
             next_order["quote_currency"], fee)
 
-        # subtract amount from book's available liquidity
-        exchange.remove_liquidity(
-            next_order["market_id"], amount / best_price)
-
         # add amount to account balance
         exchange.add_to_balance(
             next_order["base_currency"], amount / best_price)
 
-        # append event to successful_fills
-        fills.append(("fill", unix_ts_ns, {
-            "market_id": next_order["market_id"],
-            "exchange_name": next_order["exchange_name"],
-            "price": next_order["price"],
-            "amount": amount,
-            "fee": fee
-        }))
-
-        if next_order["remaining"] > 0:
-            # put remaining amount back in the queue for a
-            # partial match in the future
-            queue.append(next_order)
-
-        return fills
+        return amount, fee
 
     def trigger_bid_matches(func):
         def do_matches(self, unix_ts_ns, inputs):
@@ -364,9 +342,31 @@ class ExecutionStrategy(Strategy):
                 # current best price and liquidity available
                 best_price, liquidity = exchange.get_best_bid()
 
-                if something:
-                    fills.append()
+                if best_price >= next_order["price"]:
+                    # ...
+                    amount, fee = match(exchange,
+                                        next_order,
+                                        best_price,
+                                        liquidity)
+
+                    # ...
+                    next_order["remaining"] -= amount
+
+                    # ...
+                    fills.append(("bid_fill", unix_ts_ns, {
+                        "market_id": next_order["market_id"],
+                        "exchange_name": next_order["exchange_name"],
+                        "price": next_order["price"],
+                        "amount": amount,
+                        "fee": fee
+                    }))
+
+                    # ...
+                    if next_order["remaining"] > 0:
+                        self._bid_queue.append(next_order)
+
                 else:
+                    # ...
                     should_stop = True
 
             return events + fills
@@ -391,11 +391,31 @@ class ExecutionStrategy(Strategy):
                 # current best price and liquidity available
                 best_price, liquidity = exchange.get_best_ask()
 
-                if something:
-                    match(exchange, next_order, best_price, liquidity)
+                if best_price <= next_order["price"]:
+                    # ...
+                    amount, fee = match(exchange,
+                                        next_order,
+                                        best_price,
+                                        liquidity)
 
-                    fills.extend()
+                    # ...
+                    next_order["remaining"] -= amount
+
+                    # ...
+                    fills.append(("ask_fill", unix_ts_ns, {
+                        "market_id": next_order["market_id"],
+                        "exchange_name": next_order["exchange_name"],
+                        "price": next_order["price"],
+                        "amount": amount,
+                        "fee": fee
+                    }))
+
+                    # ...
+                    if next_order["remaining"] > 0:
+                        self._ask_queue.append(next_order)
+
                 else:
+                    # ...
                     should_stop = True
 
             return events + fills
