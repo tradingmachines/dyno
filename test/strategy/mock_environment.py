@@ -52,3 +52,10 @@ class StrategyTest(unittest.TestCase):
             "EXCHANGE 1": TestExchange1(initial_balances),
             "EXCHANGE 2": TestExchange2(initial_balances)
         }
+
+
+class QueueTest(unittest.TestCase):
+    """ ...
+    """
+    def setUp(self, QueueClass):
+        self._queue = QueueClass()

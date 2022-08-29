@@ -1,4 +1,4 @@
-from .mock_environment import StrategyTest
+from .mock_environment import StrategyTest, QueueTest
 
 from dyno.strategy import Strategy
 from dyno.strategy import DataStrategy
@@ -7,6 +7,7 @@ from dyno.strategy import ExecutionStrategy
 from dyno.strategy import EntryStrategy
 from dyno.strategy import PositionStrategy
 from dyno.strategy import ExitStrategy
+from dyno.strategy import BidQueue, AskQueue
 
 
 class TestBaseStrategy(StrategyTest):
@@ -216,3 +217,35 @@ class TestExitStrategy(StrategyTest):
 
         # not finished
         # ...
+
+
+class TestBidQueue(QueueTest):
+    """ ...
+    """
+    def test_1(self):
+        self._queue.append(1, "input 1")
+        self._queue.append(2, "input 2")
+        self._queue.append(3, "input 3")
+
+        self.assertTrue(self._queue.pop() == "input 1")
+        self.assertTrue(self._queue.pop() == "input 2")
+        self.assertTrue(self._queue.pop() == "input 3")
+
+    def setUp(self):
+        super().setUp(BidQueue)
+
+
+class TestAskQueue(QueueTest):
+    """ ...
+    """
+    def test_1(self):
+        self._queue.append(1, "input 1")
+        self._queue.append(2, "input 2")
+        self._queue.append(3, "input 3")
+
+        self.assertTrue(self._queue.pop() == "input 3")
+        self.assertTrue(self._queue.pop() == "input 2")
+        self.assertTrue(self._queue.pop() == "input 1")
+
+    def setUp(self):
+        super().setUp(AskQueue)

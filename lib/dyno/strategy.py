@@ -261,15 +261,22 @@ class BidQueue:
     def __init__(self):
         self._min_heap = []
 
+    def __len__(self):
+        return len(self._min_heap)
+
+    def __iter__(self):
+        return self._min_heap
+
     def append(self, price, inputs):
         """ ...
         """
-        heapq.heappush(self._min_heap, (price, inputs))
+        key = +price
+        heapq.heappush(self._min_heap, (key, inputs))
 
     def pop(self):
         """ ...
         """
-        price, inputs = heapq.heappop(self._max_heap)
+        _, inputs = heapq.heappop(self._min_heap)
         return inputs
 
 
@@ -279,15 +286,22 @@ class AskQueue:
     def __init__(self):
         self._max_heap = []
 
+    def __len__(self):
+        return len(self._max_heap)
+
+    def __iter__(self):
+        return self._max_heap
+
     def append(self, price, inputs):
         """ ...
         """
-        heapq.heappush(self._max_heap, (price, inputs))
+        key = -price
+        heapq.heappush(self._max_heap, (key, inputs))
 
     def pop(self):
         """ ...
         """
-        price, inputs = heapq.heappop(self._max_heap)
+        _, inputs = heapq.heappop(self._max_heap)
         return inputs
 
 
@@ -303,7 +317,7 @@ class ExecutionStrategy(Strategy):
     def match(exchange, next_order, best_price, liquidity):
         # set amount to fill entirely / partial fill
         amount = next_order["remaining"] \
-            if liquidity >= next_order["remaining"] / best_price
+            if liquidity >= next_order["remaining"] / best_price \
             else available_liquidity * best_price
 
         # calculate fee
