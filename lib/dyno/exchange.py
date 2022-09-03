@@ -86,10 +86,36 @@ class OrderBook:
     def set_best_bid(self, price, liquidity):
         """ ...
         """
-        self._best_bid = (float(price), float(liquidity))
+        if liquidity < 0:
+            raise Exception("best bid liquidity cannot be negative")
+        else:
+            self._best_bid = (float(price), float(liquidity))
 
     def set_best_ask(self, price, liquidity):
-        self._best_ask = (float(price), float(liquidity))
+        if liquidity < 0:
+            raise Exception("best ask liquidity cannot be negative")
+        else:
+            self._best_ask = (float(price), float(liquidity))
+
+    def remove_bid_liquidity(self, amount):
+        price, liquidity = self.get_best_bid()
+
+        liquidity -= amount
+
+        if liquidity < 0:
+            raise Exception("best bid liquidity cannot be negative")
+        else:
+            self.set_best_bid(price, liquidity)
+
+    def remove_ask_liquidity(self, amount):
+        price, liquidity = self.get_best_ask()
+
+        liquidity -= amount
+
+        if liquidity < 0:
+            raise Exception("best ask liquidity cannot be negative")
+        else:
+            self.set_best_ask(price, liquidity)
 
 
 class BankRoll:
@@ -153,20 +179,27 @@ class Exchange:
 
         return check_order_book
 
-    def sub_from_balance(self, market_id, amount):
+    def add_to_balance(self, currency, amount):
         """ ...
         """
-        pass
+        self._bank_roll.add_to_balance(currency, amount)
 
-    def add_to_balance(self, market_id, amount):
+    def sub_from_balance(self, currency, amount):
         """ ...
         """
-        pass
+        self._bank_roll.sub_from_balance(currency, amount)
 
-    def remove_liquidity(self, market_id, amount):
+    def remove_bid_liquidity(self, market_id, amount):
         """ ...
         """
-        pass
+        book = self._order_books[market_id]
+        book.remove_bid_liquidity(amount)
+
+    def remove_ask_liquidity(self, market_id, amount):
+        """ ...
+        """
+        book = self._order_books[market_id]
+        book.remove_ask_liquidity(amount)
 
     def get_best_bid_price(self, market_id):
         """ ...
@@ -188,34 +221,40 @@ class Exchange:
     def get_maker_quoted_fee(self, amount_quote, quote_currency):
         """ ...
         """
-        return self._fee_schedule.maker_fee(amount_quote, quote_currency)
+        sch = self._fee_schedule
+        return sch.maker_fee(amount_quote, quote_currency)
 
     def get_taker_quoted_fee(self, amount_quote, quote_currency):
         """ ...
         """
-        return self._fee_schedule.taker_fee(amount_quote, quote_currency)
+        sch = self._fee_schedule
+        return sch.taker_fee(amount_quote, quote_currency)
 
     def get_min_trade_size(self, base_currency, quote_currency):
         """ ...
         """
-        return self._size_limits[base_currency][quote_currency]["minimum"]
+        limits = self._size_limits[base_currency][quote_currency]
+        return limits["minimum"]
 
     def get_max_trade_size(self, base_currency, quote_currency):
         """ ...
         """
-        return self._size_limits[base_currency][quote_currency]["maximum"]
+        limits = self._size_limits[base_currency][quote_currency]
+        return limits["maximum"]
 
     @create_order_book_if_not_exists
     def set_best_bid(self, market_id, price, liquidity):
         """ ...
         """
-        self._order_books[market_id].set_best_bid(price, liquidity)
+        book = self._order_books[market_id]
+        book.set_best_bid(price, liquidity)
 
     @create_order_book_if_not_exists
     def set_best_ask(self, market_id, price, liquidity):
         """ ...
         """
-        self._order_books[market_id].set_best_ask(price, liquidity)
+        book = self._order_books[market_id]
+        book.set_best_ask(price, liquidity)
 
 
 class Binance(Exchange):

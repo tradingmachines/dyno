@@ -324,10 +324,6 @@ class ExecutionStrategy(Strategy):
         fee = exchange.get_taker_quoted_fee(
             amount, next_order["quote_currency"])
 
-        # subtract amount from book's available liquidity
-        exchange.remove_liquidity(
-            next_order["market_id"], amount / best_price)
-
         # subtract fee from account balance
         exchange.sub_from_balance(
             next_order["quote_currency"], fee)
@@ -363,8 +359,12 @@ class ExecutionStrategy(Strategy):
                                         best_price,
                                         liquidity)
 
-                    # ...
+                    # subtract amount from remaining
                     next_order["remaining"] -= amount
+
+                    # subtract amount from book's available liquidity
+                    exchange.remove_bid_liquidity(
+                        next_order["market_id"], amount / best_price)
 
                     # ...
                     fills.append(("bid_fill", unix_ts_ns, {
@@ -412,8 +412,12 @@ class ExecutionStrategy(Strategy):
                                         best_price,
                                         liquidity)
 
-                    # ...
+                    # subtract amount from remaining
                     next_order["remaining"] -= amount
+
+                    # subtract amount from book's available liquidity
+                    exchange.remove_ask_liquidity(
+                        next_order["market_id"], amount / best_price)
 
                     # ...
                     fills.append(("ask_fill", unix_ts_ns, {
