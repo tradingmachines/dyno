@@ -65,15 +65,15 @@ class TestDataStrategy(StrategyTest):
         # set best bid for market 2 on exchange 2
         # there is no ask yet so only event returned is:
         # [('best_bid', ...)]
-        self.assertTrue(len(s([bid1])) == 1)
-        self.assertTrue(len(s([bid2])) == 1)
+        self.assertTrue(len(s([bid1])) == 2)
+        self.assertTrue(len(s([bid2])) == 2)
 
         # set best ask for market 1 on exchange 1
         # set best ask for market 2 on exchange 2
         # both markets now have a bid and a ask price so returned
         # events are: [('best_ask', ...), ('mid_market_price', ...)]
-        self.assertTrue(len(s([ask1])) == 2)
-        self.assertTrue(len(s([ask2])) == 2)
+        self.assertTrue(len(s([ask1])) == 3)
+        self.assertTrue(len(s([ask2])) == 3)
 
         # re-set the best bid price for market 1 on exchange 1
         # re-set the best ask price for market 2 on exchange 2
@@ -137,39 +137,17 @@ class TestExecutionStrategy(StrategyTest):
     def test_1(self):
         s = ExecutionStrategy(self._exchanges)
 
-        # not finished
-        # ...
+        s._ask_queue.append(123, {
+            "market_id": 1,
+            "exchange_name": "EXCHANGE 1",
+            "base_currency": "BTC",
+            "quote_currency": "GBP",
+            "price": 127,
+            "remaining": 25
+        })
 
-    def test_2(self):
-        s = ExecutionStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-    def test_3(self):
-        s = ExecutionStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-
-class TestEntryStrategy(StrategyTest):
-    """ ...
-    """
-    def test_1(self):
-        s = EntryStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-    def test_2(self):
-        s = EntryStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-    def test_3(self):
-        s = EntryStrategy(self._exchanges)
+        outputs = s.on_best_ask(1, [])
+        print(outputs)
 
         # not finished
         # ...
@@ -180,40 +158,6 @@ class TestPositionStrategy(StrategyTest):
     """
     def test_1(self):
         s = PositionStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-    def test_2(self):
-        s = PositionStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-    def test_3(self):
-        s = PositionStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-
-class TestExitStrategy(StrategyTest):
-    """ ...
-    """
-    def test_1(self):
-        s = ExitStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-    def test_2(self):
-        s = ExitStrategy(self._exchanges)
-
-        # not finished
-        # ...
-
-    def test_3(self):
-        s = ExitStrategy(self._exchanges)
 
         # not finished
         # ...

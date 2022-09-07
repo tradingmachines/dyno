@@ -1,6 +1,6 @@
 import unittest
 
-from dyno.exchange import Exchange, StaticFeeSchedule
+from dyno.exchange import Exchange, OrderBook, StaticFeeSchedule
 
 
 class TestExchange1(Exchange):
@@ -18,6 +18,10 @@ class TestExchange1(Exchange):
                                  }
                              }
                          })
+        self._order_books = {
+            1: OrderBook((123, 50), (127, 100)),
+            2: OrderBook((50, 33), (51, 21))
+        }
 
 
 class TestExchange2(Exchange):
@@ -35,6 +39,10 @@ class TestExchange2(Exchange):
                                  }
                              }
                          })
+        self._order_books = {
+            1: OrderBook((124, 25), (126, 77)),
+            2: OrderBook((43, 65), (44, 32))
+        }
 
 
 class StrategyTest(unittest.TestCase):

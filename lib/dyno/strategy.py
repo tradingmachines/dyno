@@ -255,53 +255,59 @@ class RiskStrategy(Strategy):
         ]
 
 
-class BidQueue:
+class Queue:
     """ ...
     """
     def __init__(self):
-        self._min_heap = []
+        self._items = []
 
     def __len__(self):
-        return len(self._min_heap)
+        return len(self._items)
 
     def __iter__(self):
-        return self._min_heap
+        return self._items
+
+    def is_empty(self):
+        return len(self) == 0
+
+
+class BidQueue(Queue):
+    """ ...
+    min heap
+    """
+    def __init__(self):
+        super().__init__()
 
     def append(self, price, inputs):
         """ ...
         """
         key = +price
-        heapq.heappush(self._min_heap, (key, inputs))
+        heapq.heappush(self._items, (key, inputs))
 
     def pop(self):
         """ ...
         """
-        _, inputs = heapq.heappop(self._min_heap)
+        _, inputs = heapq.heappop(self._items)
         return inputs
 
 
-class AskQueue:
+class AskQueue(Queue):
     """ ...
+    max heap
     """
     def __init__(self):
-        self._max_heap = []
-
-    def __len__(self):
-        return len(self._max_heap)
-
-    def __iter__(self):
-        return self._max_heap
+        super().__init__()
 
     def append(self, price, inputs):
         """ ...
         """
         key = -price
-        heapq.heappush(self._max_heap, (key, inputs))
+        heapq.heappush(self._items, (key, inputs))
 
     def pop(self):
         """ ...
         """
-        _, inputs = heapq.heappop(self._max_heap)
+        _, inputs = heapq.heappop(self._items)
         return inputs
 
 
@@ -318,7 +324,7 @@ class ExecutionStrategy(Strategy):
         # set amount to fill entirely / partial fill
         amount = next_order["remaining"] \
             if liquidity >= next_order["remaining"] / best_price \
-            else available_liquidity * best_price
+            else liquidity * best_price
 
         # calculate fee
         fee = exchange.get_taker_quoted_fee(
@@ -347,17 +353,16 @@ class ExecutionStrategy(Strategy):
                 # match against bid queue
                 # ordered by price: lowest -> highest
                 next_order = self._bid_queue.pop()
-                exchange = exchanges[next_order["exchange_name"]]
+                exchange = self._exchanges[next_order["exchange_name"]]
 
                 # current best price and liquidity available
-                best_price, liquidity = exchange.get_best_bid()
+                best_price, liquidity = \
+                    exchange.get_best_bid(next_order["market_id"])
 
                 if best_price >= next_order["price"]:
                     # ...
-                    amount, fee = match(exchange,
-                                        next_order,
-                                        best_price,
-                                        liquidity)
+                    amount, fee = ExecutionStrategy.match(
+                        exchange, next_order, best_price, liquidity)
 
                     # subtract amount from remaining
                     next_order["remaining"] -= amount
@@ -400,17 +405,16 @@ class ExecutionStrategy(Strategy):
                 # match against ask queue
                 # ordered by price: highest -> lowest
                 next_order = self._ask_queue.pop()
-                exchange = exchanges[next_order["exchange_name"]]
+                exchange = self._exchanges[next_order["exchange_name"]]
 
                 # current best price and liquidity available
-                best_price, liquidity = exchange.get_best_ask()
+                best_price, liquidity = \
+                    exchange.get_best_ask(next_order["market_id"])
 
                 if best_price <= next_order["price"]:
                     # ...
-                    amount, fee = match(exchange,
-                                        next_order,
-                                        best_price,
-                                        liquidity)
+                    amount, fee = ExecutionStrategy.match(
+                        exchange, next_order, best_price, liquidity)
 
                     # subtract amount from remaining
                     next_order["remaining"] -= amount
@@ -455,17 +459,24 @@ class EntryStrategy(ExecutionStrategy):
     @ExecutionStrategy.trigger_bid_matches
     def on_take_from_bids(self, unix_ts_ns, inputs):
         # take from bids by appending to bid queue
-        self._bid_queue.append({
-            "market_id": inputs["market_id"],
-            "exchange_name": inputs["exchange_name"],
-            "price": inputs["price"],
-            "remaining": inputs["amount"]
-        })
+        self._bid_queue.append(
+            inputs["price"],
+            {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "base_currency": inputs["base_currency"],
+                "quote_currency": inputs["quote_currency"],
+                "price": inputs["price"],
+                "remaining": inputs["amount"]
+            }
+        )
 
         return [
             ("entry_bid_queue_append", unix_ts_ns, {
                 "market_id": inputs["market_id"],
                 "exchange_name": inputs["exchange_name"],
+                "base_currency": inputs["base_currency"],
+                "quote_currency": inputs["quote_currency"],
                 "price": inputs["price"],
                 "initial_amount": inputs["amount"]
             })
@@ -474,12 +485,15 @@ class EntryStrategy(ExecutionStrategy):
     @ExecutionStrategy.trigger_ask_matches
     def on_take_from_asks(self, unix_ts_ns, inputs):
         # take from asks by appending to ask queue
-        self._ask_queue.append({
-            "market_id": inputs["market_id"],
-            "exchange_name": inputs["exchange_name"],
-            "price": inputs["price"],
-            "remaining": inputs["amount"]
-        })
+        self._ask_queue.append(
+            inputs["price"],
+            {
+                "market_id": inputs["market_id"],
+                "exchange_name": inputs["exchange_name"],
+                "price": inputs["price"],
+                "remaining": inputs["amount"]
+            }
+        )
 
         return [
             ("entry_ask_queue_append", unix_ts_ns, {

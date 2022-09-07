@@ -54,9 +54,9 @@ class VolumeFeeSchedule(MakerTakerFeeSchedule):
 class OrderBook:
     """ ...
     """
-    def __init__(self):
-        self._best_bid = (None, None)
-        self._best_ask = (None, None)
+    def __init__(self, best_bid=(None, None), best_ask=(None, None)):
+        self._best_bid = best_bid
+        self._best_ask = best_ask
 
     def is_empty(self):
         """ ...
@@ -170,7 +170,7 @@ class Exchange:
     def create_order_book_if_not_exists(func):
         def check_order_book(self, market_id, price, liquidity):
             # create the order book object for the given market id
-            # if it does not clready exist
+            # if it does not already exist in order books map
             if market_id not in self._order_books:
                 self._order_books[market_id] = OrderBook()
 
@@ -200,6 +200,18 @@ class Exchange:
         """
         book = self._order_books[market_id]
         book.remove_ask_liquidity(amount)
+
+    def get_best_bid(self, market_id):
+        """ ...
+        """
+        book = self._order_books[market_id]
+        return book.get_best_bid()
+
+    def get_best_ask(self, market_id):
+        """ ...
+        """
+        book = self._order_books[market_id]
+        return book.get_best_ask()
 
     def get_best_bid_price(self, market_id):
         """ ...
