@@ -359,7 +359,7 @@ class ExecutionStrategy(Strategy):
                 best_price, liquidity = \
                     exchange.get_best_bid(next_order["market_id"])
 
-                if best_price >= next_order["price"]:
+                if best_price >= next_order["price"] and liquidity > 0:
                     # ...
                     amount, fee = ExecutionStrategy.match(
                         exchange, next_order, best_price, liquidity)
@@ -382,7 +382,8 @@ class ExecutionStrategy(Strategy):
 
                     # ...
                     if next_order["remaining"] > 0:
-                        self._bid_queue.append(next_order)
+                        self._bid_queue.append(
+                            next_order["price"], next_order)
 
                 else:
                     # ...
@@ -411,7 +412,7 @@ class ExecutionStrategy(Strategy):
                 best_price, liquidity = \
                     exchange.get_best_ask(next_order["market_id"])
 
-                if best_price <= next_order["price"]:
+                if best_price <= next_order["price"] and liquidity > 0:
                     # ...
                     amount, fee = ExecutionStrategy.match(
                         exchange, next_order, best_price, liquidity)
@@ -434,7 +435,8 @@ class ExecutionStrategy(Strategy):
 
                     # ...
                     if next_order["remaining"] > 0:
-                        self._ask_queue.append(next_order)
+                        self._ask_queue.append(
+                            next_order["price"], next_order)
 
                 else:
                     # ...

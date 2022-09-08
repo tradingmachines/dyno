@@ -137,21 +137,19 @@ class TestExecutionStrategy(StrategyTest):
     def test_1(self):
         s = ExecutionStrategy(self._exchanges)
 
-        s._ask_queue.append(123, {
+        s._ask_queue.append(127, {
             "market_id": 1,
             "exchange_name": "EXCHANGE 1",
             "base_currency": "BTC",
             "quote_currency": "GBP",
             "price": 127,
-            "remaining": 25
+            "remaining": 250
         })
 
         outputs = s.on_best_ask(1, [])
-        print(outputs)
 
-        # not finished
-        # ...
-
+        self.assertTrue(len(outputs) == 2)
+        self.assertTrue(outputs[1][2]["amount"] != 250)
 
 class TestPositionStrategy(StrategyTest):
     """ ...
