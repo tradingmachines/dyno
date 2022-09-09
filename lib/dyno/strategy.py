@@ -553,7 +553,7 @@ class PositionStrategy(Strategy):
             # don't execute the trade
             return []
 
-    def check_all_positions(func):
+    def check_open_positions(func):
         def check(self, unix_ts_ns, inputs):
             # the positions that were closed
             successfully_closed = []
@@ -591,20 +591,6 @@ class PositionStrategy(Strategy):
             ("long_executed", unix_ts_ns, inputs)
         ]
 
-    def on_ask_fill(self, unix_ts_ns, inputs):
-        # get position's fills
-        fills = self._open_longs[inputs["position_ts"]]["fills"]
-
-        # append to fills
-        fills.append({
-            "fill_price": inputs["price"],
-            "amount": inputs["amount"]
-        })
-
-        return [
-            ("ask_fill", unix_ts_ns, inputs)
-        ]
-
     def on_short_executed(self, unix_ts_ns, inputs):
         # add short to map of open short positions
         # mapping current unix time -> meta data
@@ -635,11 +621,25 @@ class PositionStrategy(Strategy):
             ("bid_fill", unix_ts_ns, inputs)
         ]
 
-    @check_all_positions
+    def on_ask_fill(self, unix_ts_ns, inputs):
+        # get position's fills
+        fills = self._open_longs[inputs["position_ts"]]["fills"]
+
+        # append to fills
+        fills.append({
+            "fill_price": inputs["price"],
+            "amount": inputs["amount"]
+        })
+
+        return [
+            ("ask_fill", unix_ts_ns, inputs)
+        ]
+
+    @check_open_positions
     def on_best_bid(self, unix_ts_ns, inputs):
         return super().on_best_bid(unix_ts_ns, inputs)
 
-    @check_all_positions
+    @check_open_positions
     def on_best_ask(self, unix_ts_ns, inputs):
         return super().on_best_ask(unix_ts_ns, inputs)
 
