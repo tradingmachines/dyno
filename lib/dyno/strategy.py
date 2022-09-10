@@ -516,10 +516,6 @@ class PositionStrategy(Strategy):
         self._open_shorts = {}
 
     @staticmethod
-    def vwap(fills):
-        return
-
-    @staticmethod
     def can_close(position):
         return False
 
@@ -529,60 +525,43 @@ class PositionStrategy(Strategy):
 
     @staticmethod
     def close(position):
-
-        # make sure account has enough balance to cover fees
-        # when exiting position
-        # ...
-
-        exit_fee = 0
-        balance_covers_fee = False
-
-        if balance_covers_fee:
-            # call and return the decorated function
-            return func(self, unix_ts_ns, {
-                "market_id": market_id,
-                "exchange_name": exchange_name,
-                "base_currency": base_currency,
-                "quote_currency": quote_currency,
-                "price": price,
-                "amount": amount
-            })
-
-        else:
-            # insufficient balance
-            # don't execute the trade
-            return []
+        return []
 
     def check_open_positions(func):
         def check(self, unix_ts_ns, inputs):
-            # the positions that were closed
-            successfully_closed = []
+            # the positions that were successfully closed
+            closed_positions = []
 
-            # get map of all positions
-            open_positions = \
-                {**self._open_longs, **self._open_shorts}
+            # consider all open long positions
+            for _, position in self._open_longs:
+                # ...
+                can = PositionStrategy.can_close()
+                should = PositionStrategy.should_close()
 
-            for _, position in open_positions:
-                if can_close(position) and should_close(position):
-                    # cancel remaining entry orders
-                    # ...
+                if can and should:
+                    pass
 
-                    # close the position
-                    closed = close(position)
-                    successfully_closed.append(closed)
+            # consider all open short positions
+            for _, position in self._open_shorts:
+                # ...
+                can = PositionStrategy.can_close()
+                should = PositionStrategy.should_close()
 
-            return successfully_closed
+                if can and should:
+                    pass
+
+            return closed_positions
 
         return check
 
     def on_long_executed(self, unix_ts_ns, inputs):
         # add long to map of open long positions
-        # mapping current unix time -> meta data
+        # mapping current unix time -> position data
         self._open_longs[unix_ts_ns] = {
             "fills": [],
             "amount": inputs["amount"],
-            "exchange_name": inputs["exchange_name"],
             "market_id": inputs["market_id"],
+            "exchange_name": inputs["exchange_name"],
             "stop_loss_pct_decrease": inputs["stop_loss_pct"],
             "take_profit_pct_increase": inputs["take_profit_pct"]
         }
@@ -593,12 +572,12 @@ class PositionStrategy(Strategy):
 
     def on_short_executed(self, unix_ts_ns, inputs):
         # add short to map of open short positions
-        # mapping current unix time -> meta data
+        # mapping current unix time -> position data
         self._open_shorts[unix_ts_ns] = {
             "fills": [],
             "amount": inputs["amount"],
-            "exchange_name": inputs["exchange_name"],
             "market_id": inputs["market_id"],
+            "exchange_name": inputs["exchange_name"],
             "stop_loss_pct_increase": inputs["stop_loss_pct"],
             "take_profit_pct_decrease": inputs["take_profit_pct"]
         }

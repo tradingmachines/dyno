@@ -157,6 +157,14 @@ class TestPositionStrategy(StrategyTest):
     def test_1(self):
         s = PositionStrategy(self._exchanges)
 
+        s.on_long_executed(1, {
+            "amount": 100,
+            "market_id": 1,
+            "exchange_name": "EXCHANGE 1",
+            "stop_loss_pct_decrease": 0.03,
+            "take_profit_pct_increase": 0.06
+        })
+
         # not finished
         # ...
 
