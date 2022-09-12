@@ -220,6 +220,7 @@ class RiskStrategy(Strategy):
                 # the amount is between the min/max bounds
                 # call and return the decorated function
                 return func(self, unix_ts_ns, {
+                    "position_ts": unix_ts_ns,
                     "market_id": market_id,
                     "exchange_name": exchange_name,
                     "base_currency": base_currency,
@@ -373,9 +374,7 @@ class ExecutionStrategy(Strategy):
 
                     # ...
                     fills.append(("bid_fill", unix_ts_ns, {
-                        "market_id": next_order["market_id"],
-                        "exchange_name": next_order["exchange_name"],
-                        "price": next_order["price"],
+                        **next_order,
                         "amount": amount,
                         "fee": fee
                     }))
@@ -426,9 +425,7 @@ class ExecutionStrategy(Strategy):
 
                     # ...
                     fills.append(("ask_fill", unix_ts_ns, {
-                        "market_id": next_order["market_id"],
-                        "exchange_name": next_order["exchange_name"],
-                        "price": next_order["price"],
+                        **next_order,
                         "amount": amount,
                         "fee": fee
                     }))
@@ -464,22 +461,14 @@ class EntryStrategy(ExecutionStrategy):
         self._bid_queue.append(
             inputs["price"],
             {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "base_currency": inputs["base_currency"],
-                "quote_currency": inputs["quote_currency"],
-                "price": inputs["price"],
+                **inputs,
                 "remaining": inputs["amount"]
             }
         )
 
         return [
             ("entry_bid_queue_append", unix_ts_ns, {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "base_currency": inputs["base_currency"],
-                "quote_currency": inputs["quote_currency"],
-                "price": inputs["price"],
+                **inputs,
                 "initial_amount": inputs["amount"]
             })
         ]
@@ -490,18 +479,14 @@ class EntryStrategy(ExecutionStrategy):
         self._ask_queue.append(
             inputs["price"],
             {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "price": inputs["price"],
+                **inputs,
                 "remaining": inputs["amount"]
             }
         )
 
         return [
             ("entry_ask_queue_append", unix_ts_ns, {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "price": inputs["price"],
+                **inputs,
                 "initial_amount": inputs["amount"]
             })
         ]
@@ -516,52 +501,119 @@ class PositionStrategy(Strategy):
         self._open_shorts = {}
 
     @staticmethod
-    def can_close(position):
-        return False
+    def vwap(fills):
+        # ...
+        total_amount = \
+            sum(map(lambda _, amount: amount, fills))
+
+        # ...
+        weighted_average = \
+            sum(map(lambda price, amount: price * \
+                    (amount / total_amount)), fills)
+
+        return weighted_average
 
     @staticmethod
-    def should_close(position):
-        return False
+    def should_close(entry_price, current_price,
+                     win_threshold, lose_threshold):
 
-    @staticmethod
-    def close(position):
-        return []
+        # ...
+        pct_change = entry_price / current_price
+
+        if pct_change >= win_threshold:
+            # ...
+            return True
+        elif pct_change <= lose_threshold:
+            # ...
+            return True
+        else:
+            # ...
+            return False
 
     def check_open_positions(func):
         def check(self, unix_ts_ns, inputs):
             # the positions that were successfully closed
             closed_positions = []
 
-            # consider all open long positions
-            for _, position in self._open_longs:
+            # consider open long positions
+            for ts, position in list(self._open_longs.items()):
                 # ...
-                can = PositionStrategy.can_close()
-                should = PositionStrategy.should_close()
+                current_price = inputs["mid_market_price"]
+                win_threshold = position["take_profit_pct_increase"]
+                lose_threshold = position["stop_loss_pct_decrease"]
 
-                if can and should:
-                    pass
-
-            # consider all open short positions
-            for _, position in self._open_shorts:
                 # ...
-                can = PositionStrategy.can_close()
-                should = PositionStrategy.should_close()
+                vwap = \
+                    PositionStrategy.vwap([(fill["price"], fill["amount"])
+                                           for fill in position["fills"]])
 
-                if can and should:
-                    pass
+                # check risk/reward ratio
+                should_close = \
+                    PositionStrategy.should_close(vwap,
+                                                  current_price,
+                                                  win_threshold
+                                                  lose_threshold)
+
+                if should_close:
+                    # remove the position from open longs
+                    del self._open_longs[ts]
+
+                    # close each fill
+                    closed_positions.extend([
+                        ("give_to_bids", unix_ts_ns, {
+                            **position,
+                            "price": fill["price"],
+                            "amount": fill["amount"]
+                        })
+                        for fill in position["fills"]
+                    ])
+
+            # consider open short positions
+            for ts, position in list(self._open_shorts.items()):
+                # ...
+                current_price = inputs["mid_market_price"]
+                win_threshold = position["take_profit_pct_decrease"]
+                lose_threshold = position["stop_loss_pct_increase"]
+
+                # ...
+                vwap = \
+                    PositionStrategy.vwap([(fill["price"], fill["amount"])
+                                           for fill in position["fills"]])
+
+                # check risk/reward ratio
+                should_close = \
+                    PositionStrategy.should_close(vwap,
+                                                  current_price,
+                                                  win_threshold,
+                                                  lose_threshold)
+
+                if should_close:
+                    # remove the position from open shorts
+                    del self._open_shorts[ts]
+
+                    # close each fill
+                    closed_positions.extend([
+                        ("give_to_asks", unix_ts_ns, {
+                            **position,
+                            "price": fill["price"],
+                            "amount": fill["amount"]
+                        })
+                        for fill in position["fills"]
+                    ])
 
             return closed_positions
 
         return check
 
     def on_long_executed(self, unix_ts_ns, inputs):
+        # ...
+        position_ts = inputs["position_ts"]
+
         # add long to map of open long positions
         # mapping current unix time -> position data
-        self._open_longs[unix_ts_ns] = {
+        self._open_longs[position_ts] = {
+            **inputs,
             "fills": [],
-            "amount": inputs["amount"],
-            "market_id": inputs["market_id"],
-            "exchange_name": inputs["exchange_name"],
             "stop_loss_pct_decrease": inputs["stop_loss_pct"],
             "take_profit_pct_increase": inputs["take_profit_pct"]
         }
@@ -571,13 +623,14 @@ class PositionStrategy(Strategy):
         ]
 
     def on_short_executed(self, unix_ts_ns, inputs):
+        # ...
+        position_ts = inputs["position_ts"]
+
         # add short to map of open short positions
         # mapping current unix time -> position data
-        self._open_shorts[unix_ts_ns] = {
+        self._open_shorts[position_ts] = {
+            **inputs,
             "fills": [],
-            "amount": inputs["amount"],
-            "market_id": inputs["market_id"],
-            "exchange_name": inputs["exchange_name"],
             "stop_loss_pct_increase": inputs["stop_loss_pct"],
             "take_profit_pct_decrease": inputs["take_profit_pct"]
         }
@@ -588,9 +641,10 @@ class PositionStrategy(Strategy):
 
     def on_bid_fill(self, unix_ts_ns, inputs):
         # get position's fills
-        fills = self._open_shorts[inputs["position_ts"]]["fills"]
+        ts = inputs["position_ts"]
+        fills = self._open_shorts[ts]["fills"]
 
-        # append to fills
+        # append to position's fills
         fills.append({
             "fill_price": inputs["price"],
             "amount": inputs["amount"]
@@ -602,9 +656,10 @@ class PositionStrategy(Strategy):
 
     def on_ask_fill(self, unix_ts_ns, inputs):
         # get position's fills
-        fills = self._open_longs[inputs["position_ts"]]["fills"]
+        ts = inputs["position_ts"]
+        fills = self._open_longs[ts]["fills"]
 
-        # append to fills
+        # append to position's fills
         fills.append({
             "fill_price": inputs["price"],
             "amount": inputs["amount"]
@@ -615,12 +670,10 @@ class PositionStrategy(Strategy):
         ]
 
     @check_open_positions
-    def on_best_bid(self, unix_ts_ns, inputs):
-        return super().on_best_bid(unix_ts_ns, inputs)
-
-    @check_open_positions
-    def on_best_ask(self, unix_ts_ns, inputs):
-        return super().on_best_ask(unix_ts_ns, inputs)
+    def on_mid_market_price(self, unix_ts_ns, inputs):
+        return [
+            ("mid_market_price", unix_ts_ns, inputs)
+        ]
 
 
 class ExitStrategy(ExecutionStrategy):
@@ -630,17 +683,13 @@ class ExitStrategy(ExecutionStrategy):
     def on_give_to_bids(self, unix_ts_ns, inputs):
         # give to bids by appending to bids queue
         self._bid_queue.append({
-            "market_id": inputs["market_id"],
-            "exchange_name": inputs["exchange_name"],
-            "price": inputs["price"],
+            **inputs,
             "remaining": inputs["amount"]
         })
 
         return [
             ("exit_bid_queue_append", unix_ts_ns, {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "price": inputs["price"],
+                **inputs,
                 "initial_amount": inputs["amount"]
             })
         ]
@@ -649,17 +698,13 @@ class ExitStrategy(ExecutionStrategy):
     def on_give_to_asks(self, unix_ts_ns, inputs):
         # give to asks by appending to asks queue
         self._ask_queue.append({
-            "market_id": inputs["market_id"],
-            "exchange_name": inputs["exchange_name"],
-            "price": inputs["price"],
+            **inputs,
             "remaining": inputs["amount"]
         })
 
         return [
             ("exit_ask_queue_append", unix_ts_ns, {
-                "market_id": inputs["market_id"],
-                "exchange_name": inputs["exchange_name"],
-                "price": inputs["price"],
+                **inputs,
                 "initial_amount": inputs["amount"]
             })
         ]
