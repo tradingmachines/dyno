@@ -502,11 +502,11 @@ class PositionStrategy(Strategy):
 
     @staticmethod
     def vwap(fills):
-        # ...
+        # sum fill sizes
         total_amount = \
             sum(map(lambda _, amount: amount, fills))
 
-        # ...
+        # compute weighted average price
         weighted_average = \
             sum(map(lambda price, amount: price * \
                     (amount / total_amount)), fills)
@@ -514,20 +514,19 @@ class PositionStrategy(Strategy):
         return weighted_average
 
     @staticmethod
-    def should_close(entry_price, current_price,
-                     win_threshold, lose_threshold):
+    def should_close(pct_change, win_threshold, lose_threshold):
+        if pct_change > 0:
+            # position has made money,
+            # close if reach win threshold
+            return +pct_change >= win_threshold
 
-        # ...
-        pct_change = entry_price / current_price
+        elif pct_change < 0:
+            # position has lost money,
+            # close if reach lose threshold
+            return -pct_change >= lose_threshold
 
-        if pct_change >= win_threshold:
-            # ...
-            return True
-        elif pct_change <= lose_threshold:
-            # ...
-            return True
         else:
-            # ...
+            # no change, don't close
             return False
 
     def check_open_positions(func):
@@ -537,21 +536,23 @@ class PositionStrategy(Strategy):
 
             # consider open long positions
             for ts, position in list(self._open_longs.items()):
-                # ...
+                # extract position data
                 current_price = inputs["mid_market_price"]
                 win_threshold = position["take_profit_pct_increase"]
                 lose_threshold = position["stop_loss_pct_decrease"]
 
-                # ...
-                vwap = \
+                # use vwap of fills as entry price
+                entry_price = \
                     PositionStrategy.vwap([(fill["price"], fill["amount"])
                                            for fill in position["fills"]])
 
+                # calculate price percent change since position opened
+                pct_change = (current_price - entry_price) / entry_price
+
                 # check risk/reward ratio
                 should_close = \
-                    PositionStrategy.should_close(vwap,
-                                                  current_price,
-                                                  win_threshold
+                    PositionStrategy.should_close(pct_change,
+                                                  win_threshold,
                                                   lose_threshold)
 
                 if should_close:
@@ -570,20 +571,22 @@ class PositionStrategy(Strategy):
 
             # consider open short positions
             for ts, position in list(self._open_shorts.items()):
-                # ...
+                # extract position data
                 current_price = inputs["mid_market_price"]
                 win_threshold = position["take_profit_pct_decrease"]
                 lose_threshold = position["stop_loss_pct_increase"]
 
-                # ...
-                vwap = \
+                # use vwap of fills as entry price
+                entry_price = \
                     PositionStrategy.vwap([(fill["price"], fill["amount"])
                                            for fill in position["fills"]])
 
+                # calculate price percent change since position opened
+                pct_change = (entry_price - current_price) / entry_price
+
                 # check risk/reward ratio
                 should_close = \
-                    PositionStrategy.should_close(vwap,
-                                                  current_price,
+                    PositionStrategy.should_close(pct_change,
                                                   win_threshold,
                                                   lose_threshold)
 
