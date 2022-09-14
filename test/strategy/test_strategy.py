@@ -89,18 +89,23 @@ class TestRiskStrategy(StrategyTest):
     """ ...
     """
     def test_1(self):
-        for confidence, negative, positive in [(0.7, 0.015, 0.035),
-                                               (0.65, 0.015, 0.035),
-                                               (0.50, 0.015, 0.035)]:
+        # ...
+        for confidence, negative, positive in [
+                (0.7, 0.015, 0.035),
+                (0.65, 0.015, 0.035),
+                (0.50, 0.015, 0.035)]:
 
+            # ...
             fraction = RiskStrategy.kelly_fraction(
                 confidence, negative, positive)
 
+            # ...
             self.assertTrue(fraction > 0)
 
     def test_2(self):
         s = RiskStrategy(self._exchanges)
 
+        # ...
         output = s.on_long(1, {
             "market_id": 1,
             "exchange_name": "EXCHANGE 1",
@@ -112,11 +117,13 @@ class TestRiskStrategy(StrategyTest):
             "take_profit_pct": 0.035
         })
 
+        # ...
         self.assertTrue(len(output) == 2)
 
     def test_3(self):
         s = RiskStrategy(self._exchanges)
 
+        # ...
         output = s.on_short(1, {
             "market_id": 1,
             "exchange_name": "EXCHANGE 2",
@@ -128,6 +135,7 @@ class TestRiskStrategy(StrategyTest):
             "take_profit_pct": 0.035
         })
 
+        # ...
         self.assertTrue(len(output) == 2)
 
 
@@ -137,6 +145,7 @@ class TestExecutionStrategy(StrategyTest):
     def test_1(self):
         s = ExecutionStrategy(self._exchanges)
 
+        # ...
         s._ask_queue.append(127, {
             "market_id": 1,
             "exchange_name": "EXCHANGE 1",
@@ -146,9 +155,13 @@ class TestExecutionStrategy(StrategyTest):
             "remaining": 250
         })
 
+        # ...
         outputs = s.on_best_ask(1, [])
 
+        # ...
         self.assertTrue(len(outputs) == 2)
+
+        # ...
         self.assertTrue(outputs[1][2]["amount"] != 250)
 
 class TestPositionStrategy(StrategyTest):
@@ -157,26 +170,67 @@ class TestPositionStrategy(StrategyTest):
     def test_1(self):
         s = PositionStrategy(self._exchanges)
 
-        s.on_long_executed(1, {
-            "amount": 100,
+        # ...
+        outputs = s.on_long_executed(1, {
+            "position_ts": 1,
             "market_id": 1,
             "exchange_name": "EXCHANGE 1",
-            "stop_loss_pct_decrease": 0.03,
-            "take_profit_pct_increase": 0.06
+            "base_currency": "BTC",
+            "quote_currency": "GBP",
+            "price": 100.50,
+            "amount": 12.25,
+            "stop_loss_pct": 0.03,
+            "take_profit_pct": 0.06
         })
 
-        # not finished
         # ...
+        self.assertTrue(len(outputs) == 1)
+
+        # ...
+        outputs = s.on_ask_fill(2, {
+            "position_ts": 1,
+            "market_id": 1,
+            "exchange_name": "EXCHANGE 1",
+            "base_currency": "BTC",
+            "quote_currency": "GBP",
+            "price": 100.49,
+            "amount": 6
+        })
+
+        # ...
+        self.assertTrue(len(outputs) == 1)
+
+        # ...
+        outputs = s.on_mid_market_price(1, {
+            "market_id": 1,
+            "exchange_name": "EXCHANGE 1",
+            "mid_market_price": 100.40
+        })
+
+        # ...
+        self.assertTrue(len(outputs) == 0)
+
+        # ...
+        outputs = s.on_mid_market_price(1, {
+            "market_id": 1,
+            "exchange_name": "EXCHANGE 1",
+            "mid_market_price": 50
+        })
+
+        # ...
+        self.assertTrue(len(outputs) == 1)
 
 
 class TestBidQueue(QueueTest):
     """ ...
     """
     def test_1(self):
+        # ...
         self._queue.append(1, "input 1")
         self._queue.append(2, "input 2")
         self._queue.append(3, "input 3")
 
+        # ...
         self.assertTrue(self._queue.pop() == "input 1")
         self.assertTrue(self._queue.pop() == "input 2")
         self.assertTrue(self._queue.pop() == "input 3")
@@ -189,10 +243,12 @@ class TestAskQueue(QueueTest):
     """ ...
     """
     def test_1(self):
+        # ...
         self._queue.append(1, "input 1")
         self._queue.append(2, "input 2")
         self._queue.append(3, "input 3")
 
+        # ...
         self.assertTrue(self._queue.pop() == "input 3")
         self.assertTrue(self._queue.pop() == "input 2")
         self.assertTrue(self._queue.pop() == "input 1")

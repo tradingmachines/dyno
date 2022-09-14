@@ -503,13 +503,11 @@ class PositionStrategy(Strategy):
     @staticmethod
     def vwap(fills):
         # sum fill sizes
-        total_amount = \
-            sum(map(lambda _, amount: amount, fills))
+        total_amount = sum([amount for _, amount in fills])
 
         # compute weighted average price
-        weighted_average = \
-            sum(map(lambda price, amount: price * \
-                    (amount / total_amount)), fills)
+        weighted_average = sum([price * (amount / total_amount)
+                                for price, amount in fills])
 
         return weighted_average
 
@@ -649,7 +647,7 @@ class PositionStrategy(Strategy):
 
         # append to position's fills
         fills.append({
-            "fill_price": inputs["price"],
+            "price": inputs["price"],
             "amount": inputs["amount"]
         })
 
@@ -664,7 +662,7 @@ class PositionStrategy(Strategy):
 
         # append to position's fills
         fills.append({
-            "fill_price": inputs["price"],
+            "price": inputs["price"],
             "amount": inputs["amount"]
         })
 
