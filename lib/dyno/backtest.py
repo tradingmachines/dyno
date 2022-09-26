@@ -2,125 +2,40 @@ import time
 import functools
 
 from tqdm import tqdm
+from statistics import mean, stdev
 
 
 class Results:
     """ ...
     """
-    def __init__(self, start_ts_ns, end_ts_ns):
+    def __init__(self, start_ts_ns, end_ts_ns, outputs):
         self._start_ts_ns = start_ts_ns
         self._end_ts_ns = end_ts_ns
+        self._outputs = outputs
 
     def __str__(self):
         return f"""
         * trades
-        total: {len(self.trades())}
-        longs: {len(self.longs())}
-        shorts: {len(self.shorts())}
+        {self.trades_summary()}
 
         * performance
-        net gain: {self.net_gain()}%
-        win rate: {self.win_rate()}%
-        sharpe value: {self.sharpe_value()}
-        max drawdown: {self.max_drawdown()}%
+        {self.performance_summary()}
 
-        * backtest timings
-        start: {self.backtest_timings()["start"]}
-        end: {self.backtest_timings()["end"]}
-        took: {self.backtest_timings()["took"]}
-
-        * event/data timings
-        first event: {self.event_timings()["first"]}
-        last event: {self.event_timings()["last"]}
-        timeframe: {self.event_timings()["timeframe"]}
+        * timings
+        {self.timings_summary()}
 
         * returns
-        avg: ?
-        std: ?
-        skew: ?
-        kurt: ?
-
-        * fees
-        total: ?
-        avg: ?
-        min: ?
-        max: ?
+        {self.returns_summary()}
 
         * wins
-        total: ?
-        avg: ?
-        min: ?
-        max: ?
+        {self.wins_summary()}
 
         * losses
-        total: ?
-        avg: ?
-        min: ?
-        max: ?
+        {self.losses_summary()}
+
+        * fees
+        {self.fees_summary()}
         """
-
-    def plot_summary(self):
-        """ ...
-        """
-
-        # plot graph with plotly
-        # ...
-
-        pass
-
-    def plot_equity_curve(self):
-        """ ...
-        """
-
-        # plot graph with plotly
-        # ...
-
-        pass
-
-    def plot_draw_down(self):
-        """ ...
-        """
-
-        # plot graph with plotly
-        # ...
-
-        pass
-
-    def plot_returns(self):
-        """ ...
-        """
-
-        # plot graph with plotly
-        # ...
-
-        pass
-
-    def backtest_timings(self):
-        """ ...
-        """
-
-        # calculate backtest timings
-        # ...
-
-        # maybe: collect and plot distribution of timings of
-        # each event->pipeline->stages
-        # ...
-
-        return {
-            "start": "",
-            "end": "",
-            "took": ""
-        }
-
-    def event_timings(self):
-        """ ...
-        """
-
-        # maybe: collect and plot distribution of timings of
-        # each event->pipeline->stages
-        # ...
-
-        return {"first": "", "last": "", "timeframe": ""}
 
     def trades(self):
         """ ...
@@ -130,77 +45,155 @@ class Results:
     def longs(self):
         """ ...
         """
-        return list(filter(lambda x: x.side == "", self.trades()))
+        return []
 
     def shorts(self):
         """ ...
         """
-        return list(filter(lambda x: x.side == "", self.trades()))
+        return []
+
+    def trades_summary(self):
+        return f"""
+        total: {len(self.trades())}
+        longs: {len(self.longs())}
+        shorts: {len(self.shorts())}
+        """
 
     def net_gain(self):
         """ ...
         """
-
-        # calculate net gain
-        # ...
-
         return 0
 
     def win_rate(self):
         """ ...
         """
-
-        # calculate percentage of winning trades
-        # out of all trades
-        # ...
-
         return 0
 
     def sharpe_value(self):
         """ ...
         """
-
-        # calculate sharpe value against just holding the base currency
-        # ...
-
         return 0
 
     def max_drawdown(self):
         """ ...
         """
-
-        # calculate maximum drawdown during backtest
-        # ...
-
         return 0
+
+    def performance_summary(self):
+        return f"""
+        net gain: {self.net_gain()}%
+        win rate: {self.win_rate()}%
+        sharpe value: {self.sharpe_value()}
+        max drawdown: {self.max_drawdown()}%
+        """
+
+    def backtest_timings(self):
+        """ ...
+        """
+        return {
+            "start": 0,
+            "end": 0,
+            "took": 0
+        }
+
+    def event_timings(self):
+        """ ...
+        """
+        return {
+            "first": 0,
+            "last": 0,
+            "timeframe": 0
+        }
+
+    def timings_summary(self):
+        return f"""
+        ** backtest
+        start: {self.backtest_timings()["start"]}
+        end: {self.backtest_timings()["end"]}
+        took: {self.backtest_timings()["took"]}
+
+        ** event
+        first event: {self.event_timings()["first"]}
+        last event: {self.event_timings()["last"]}
+        timeframe: {self.event_timings()["timeframe"]}
+        """
 
     def returns(self):
         """ ...
         """
+        return []
 
-        # return list of returns
-        # ...
+    def log_returns(self):
+        """ ...
+        """
+        return []
 
-        return[]
+    def returns_summary(self):
+        return f"""
+        avg: ?
+        std: ?
+        skew: ?
+        kurt: ?
+        """
 
     def winning_trades(self):
         """ ...
         """
-        return list(filter(lambda x: x.won == True, self.trades()))
+        return []
+
+    def wins_summary(self):
+        return f"""
+        total: ?
+        avg: ?
+        min: ?
+        max: ?
+        """
 
     def losing_trades(self):
         """ ...
         """
-        return list(filter(lambda x: x.won == False, self.trades()))
+        return []
 
-    def all_fees(self):
-        """ ...
+    def losses_summary(self):
+        return f"""
+        total: ?
+        avg: ?
+        min: ?
+        max: ?
         """
 
-        # return list of all fees paid
-        # ...
-
+    def all_fees_incurred(self):
+        """ ...
+        """
         return []
+
+    def fees_summary(self):
+        return f"""
+        total: {sum(self.all_fees_incurred())}
+        avg: {mean(self.all_fees_incurred())}
+        min: {min(self.all_fees_incurred())}
+        max: {max(self.all_fees_incurred())}
+        """
+
+    def plot(self):
+        """ ...
+        """
+        return
+
+    def plot_equity_curve(self):
+        """ ...
+        """
+        return
+
+    def plot_draw_down(self):
+        """ ...
+        """
+        return
+
+    def plot_returns(self):
+        """ ...
+        """
+        return
 
 
 class Pipeline:
@@ -249,12 +242,12 @@ class Backtest:
             iterator = self
 
         # create a list from the iterator
-        states = [state for state in iterator]
+        outputs = [output for output in iterator]
 
         # system timestamp exeucte() finished
         end_ts_ns = time.time_ns()
 
-        return Results(start_ts_ns, end_ts_ns, states)
+        return Results(start_ts_ns, end_ts_ns, outputs)
 
 
 class Ensemble:
