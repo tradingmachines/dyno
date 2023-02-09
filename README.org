@@ -7,9 +7,7 @@
 #+STARTUP:          showall
 #+EXPORT_FILE_NAME: dyno
 
-
 Backtesting framework for high-frequency trading strategies
-
 
 ** example usage
 A more complete set of examples can be found in the =examples= directory.
@@ -35,8 +33,6 @@ A more complete set of examples can be found in the =examples= directory.
 #+END_SRC
 
 ** library
-...
-
 *** backtest
 Contains core dyno components: strategy pipeline and backtest class.
 The pipeline is a sequence of callable objects which are folded over

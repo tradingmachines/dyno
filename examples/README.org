@@ -1,0 +1,5 @@
+#+TITLE:  examples
+#+AUTHOR: William Santos
+#+EMAIL:  w@wsantos.net
+
+dyno example usage and demo programs
