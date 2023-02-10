@@ -83,7 +83,7 @@ class TestCryptocurrencyExchanges(HelpersTest):
     def test_3(self):
         # still 12 exchanges in total
         exchanges = all_cryptocurrency_exchanges()
-        self.assertTrue(len(exchanges) == 12)
+        self.assertTrue(len(exchanges) == 11)
 
 
 class TestBuildStrategies(HelpersTest):

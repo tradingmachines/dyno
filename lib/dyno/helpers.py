@@ -4,41 +4,33 @@ from .backtest import Pipeline
 
 
 def spot_market_cryptocurrency_exchanges():
-    """ ...
-    """
     return {
-        "BINANCE": exchange.Binance(),
-        "BITFINEX": exchange.Bitfinex(),
-        "BITFLYER": exchange.Bitflyer(),
-        "BITMEX": exchange.BitMEX(),
-        "BITSTAMP": exchange.Bitstamp(),
-        "BYBIT": exchange.Bybit(),
-        "COINBASE": exchange.Coinbase(),
-        "FTX": exchange.FTX(),
-        "GEMINI": exchange.Gemini(),
-        "HITBTC": exchange.HitBTC(),
-        "KRAKEN": exchange.Kraken(),
-        "POLONIEX": exchange.Poloniex()
+        "BINANCE.SPOT": exchange.Binance(),
+        "BITFINEX.SPOT": exchange.Bitfinex(),
+        "BITFLYER.SPOT": exchange.Bitflyer(),
+        "BITMEX.SPOT": exchange.BitMEX(),
+        "BITSTAMP.SPOT": exchange.Bitstamp(),
+        "BYBIT.SPOT": exchange.Bybit(),
+        "COINBASE.SPOT": exchange.Coinbase(),
+        "GEMINI.SPOT": exchange.Gemini(),
+        "HITBTC.SPOT": exchange.HitBTC(),
+        "KRAKEN.SPOT": exchange.Kraken(),
+        "POLONIEX.SPOT": exchange.Poloniex()
     }
 
 
 def futures_market_cryptocurrency_exchanges():
-    """ ...
-    """
     return {
-        "BINANCE": exchange.Binance(),
-        "BITFINEX": exchange.Bitfinex(),
-        "BITMEX": exchange.BitMEX(),
-        "BYBIT": exchange.Bybit(),
-        "FTX": exchange.FTX(),
-        "HITBTC": exchange.HitBTC(),
-        "KRAKEN": exchange.Kraken()
+        "BINANCE.FUTURE": exchange.Binance(),
+        "BITFINEX.FUTURE": exchange.Bitfinex(),
+        "BITMEX.FUTURE": exchange.BitMEX(),
+        "BYBIT.FUTURE": exchange.Bybit(),
+        "HITBTC.FUTURE": exchange.HitBTC(),
+        "KRAKEN.FUTURE": exchange.Kraken()
     }
 
 
 def all_cryptocurrency_exchanges():
-    """ ...
-    """
     return {
         **spot_market_cryptocurrency_exchanges(),
         **futures_market_cryptocurrency_exchanges()
@@ -46,7 +38,18 @@ def all_cryptocurrency_exchanges():
 
 
 def build_basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
-    """ ...
+    """ Helper function. Build and return a Pipeline object using dyno's pre-defined
+    strategy classes. Each strategy object has access to the shared state "exchanges"
+    which is assumed to be a dictionary mapping exchange names to exchange objects.
+    An exchange object implements exchange-like behaviour e.g. by subclassing the
+    Exchange class found in exchanges.py
+
+    1. data strategy: feature engineering
+    2. user's own signal strategy: produces entry (long/short) signals
+    3. risk strategy: decide how much bankroll to place on a position
+    4. entry strategy: simulates order execution against the exchange's book
+    5. position strategy: produces exit signals
+    6. exit strategy: simulates order execution against the exchange's book
     """
     return Pipeline(strategy.DataStrategy(exchanges),
                     UserDefinedSignalStrategy(exchanges),
@@ -57,7 +60,8 @@ def build_basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
 
 
 class QueueNode:
-    """ ...
+    """ A node in a circular queue. Has a "thing" value and points to previous and
+    next nodes in the queue.
     """
     def __init__(self, prev_node, next_node, thing):
         self.prev_node = prev_node
@@ -66,7 +70,8 @@ class QueueNode:
 
 
 class CircularQueue:
-    """ ...
+    """ Implements a circular queue by maintaining pointers to head and tail QueueNode
+    objects. Also keeps a count of the number of nodes in the queue.
     """
     def __init__(self):
         self._head = None
@@ -82,12 +87,11 @@ class CircularQueue:
         return iter(things)
 
     def is_empty(self):
-        """ ...
-        """
         return self._counter == 0
 
     def append(self, thing):
-        """ ...
+        """ Append a new "thing" to the queue. Note: the user does not need to create
+        the QueueNode object as this is done internally.
         """
         # create the new queue node
         prev_node = self._tail
@@ -112,7 +116,8 @@ class CircularQueue:
         self._counter += 1
 
     def trim_head(self, n=1):
-        """ ...
+        """ Removes the queue's head node and replaces it with the next head
+        if there is one. Does this n (default 1) times using recursion.
         """
         if self.is_empty():
             # cannot trim an empty queue
@@ -142,7 +147,8 @@ class CircularQueue:
                 return [trimmed.thing]
 
     def trim_tail(self, n=1):
-        """ ...
+        """ Removes the queue's tail node and replaces it with the previous tail
+        if there is one. Does this n (default 1) times using recursion.
         """
         if self.is_empty():
             # cannot trim an empty queue
@@ -172,7 +178,8 @@ class CircularQueue:
                 return [trimmed.thing]
 
     def get_head(self, n=1):
-        """ ...
+        """ Get up to n (default 1) "things" starting from the queue's head and
+        going forward. If queue's length is < n then raise exception.
         """
         # get the head
         head = self._head
@@ -194,7 +201,8 @@ class CircularQueue:
         return things
 
     def get_tail(self, n=1):
-        """ ...
+        """ Get up to n (default 1) "things" starting from the queue's tail and
+        going backwards. If queue's length is < n then raise exception.
         """
         # get the tail
         tail = self._tail
@@ -217,14 +225,20 @@ class CircularQueue:
 
 
 class EventTimeWindow:
-    """ ...
+    """ Implements a window using event time. A window is zero or more events in
+    chronological order (according to their event timestamps). The difference between
+    the first and last event timestamps will always be at most window_duration_seconds.
+
+    - An event is a three-tuple: (event_name, unix_ts_ns, inputs)
+    - The window's size is given in seconds: window_duration_seconds
     """
     def __init__(self, window_duration_seconds):
         self._window_duration_secs = window_duration_seconds
         self._circular_queue = CircularQueue()
 
     def add_event(self, event_name, unix_ts_ns, inputs):
-        """ ...
+        """ Append a new event to the window, and remove zero or more events if they
+        have expired (trim the underlying circular queue).
         """
         # append to queue
         self._circular_queue.append((event_name, unix_ts_ns, inputs))
@@ -240,10 +254,12 @@ class EventTimeWindow:
 
             else:
                 # get head and tail of the queue
+                # use [0] because get_head/tail always returns a list
                 newest = self._circular_queue.get_tail()[0]
                 oldest = self._circular_queue.get_head()[0]
 
-                # extract event timestamps
+                # extract event timestamps from
+                # (event_name, unix_ts_ns, inputs)
                 newest_ts_ns = newest[1]
                 oldest_ts_ns = oldest[1]
 
@@ -260,7 +276,7 @@ class EventTimeWindow:
                     self._circular_queue.trim_head()
 
     def get_window(self):
-        """ ... 
+        """ Return a list of all events in the window.
         """
         return list(self._circular_queue)
 

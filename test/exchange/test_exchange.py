@@ -1,14 +1,7 @@
 from .mock_environment import ClientTest
 
 
-class TestStaticFeeSchedule(ClientTest):
-    """ ...
-    """
-    def test_1(self):
-        pass
-
-
-class TestVolumeFeeSchedule(ClientTest):
+class TestMakerTakerFeeSchedule(ClientTest):
     """ ...
     """
     def test_1(self):

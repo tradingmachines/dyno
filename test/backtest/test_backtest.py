@@ -9,8 +9,6 @@ class TestResults(ClientTest):
     def test_1(self):
         r = Results(0, 1, [])
 
-        print(r)
-
         # not finished
         # ...
 

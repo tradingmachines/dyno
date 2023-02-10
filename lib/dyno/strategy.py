@@ -3,7 +3,17 @@ import heapq
 
 
 class Strategy:
-    """ ...
+    """ Base class for all strategy classes. A strategy is a "stage" in a
+    pipeline hence it is callable via __call__. The input to "call" is a list of
+    events, and the output is also a list of events. All strategies have access
+    to self._exchanges which is shared state.
+
+    - An event is a three-tuple: (event_name, unix_ts_ns, inputs).
+    - A strategy class defines handler functions called on_event_name that
+      receive an event's timestamp and inputs and return a list of new
+      events.
+    - If a handler is missing then the input event is simply appended to the
+      list of output events i.e. "forwarded".
     """
     def __init__(self, exchanges):
         self._exchanges = exchanges
@@ -11,8 +21,8 @@ class Strategy:
     def __call__(self, events_in):
         events_out = []
 
-        # consider each of the inputs
         for event_name, unix_ts_ns, inputs in events_in:
+            # derive the handler's name
             func_name = f"on_{event_name}"
 
             if hasattr(self, func_name):
@@ -36,7 +46,19 @@ class Strategy:
 
 
 class DataStrategy(Strategy):
-    """ ...
+    """ The data strategy receives best_bid and best_ask events and returns
+    mid_market_price and mid_market_price_returns events. It also updates the best
+    bid and ask levels in the self._exchanges shared state.
+
+    1)
+    on_best_bid -> update bid price on exchange -> calculate mid market price ->
+    calculate mid market price returns
+    2)
+    on_best_ask -> update ask price on exchange -> calculate mid market price ->
+    calculate mid market price returns
+    3)
+    The current and previous mid market prices are stored to that the mid market
+    returns can be calculated: (curr - prev) / prev
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
@@ -44,7 +66,7 @@ class DataStrategy(Strategy):
         self._prev_mid_market_prices = {}
 
     def mid_market_price_returns(func):
-        def recompute(self, unix_ts_ns, inputs):
+        def compute(self, unix_ts_ns, inputs):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
@@ -81,10 +103,10 @@ class DataStrategy(Strategy):
                 # none then just return output of decorated function
                 return events
 
-        return recompute
+        return compute
 
     def mid_market_price(func):
-        def recompute(self, unix_ts_ns, inputs):
+        def compute(self, unix_ts_ns, inputs):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
@@ -128,7 +150,7 @@ class DataStrategy(Strategy):
                 # output of decorated function
                 return events
             
-        return recompute
+        return compute
 
     @mid_market_price_returns
     @mid_market_price
@@ -158,11 +180,19 @@ class DataStrategy(Strategy):
 
 
 class RiskStrategy(Strategy):
-    """ ...
+    """ The risk strategy receives entry signals from the user's signal strategy,
+    and decides how much bank roll to place on a position.
+
+    1)
+    on_long -> enter trade -> long_executed event -> take_from_bids event
+    2)
+    on_short -> enter trade -> short_executed event -> take_from_asks event
+    
     """
     @staticmethod
     def kelly_fraction(confidence, negative, positive):
-        """ ...
+        """ The Kelly criterion is a formula that determines the optimal theoretical
+        size for a bet. It is valid when the expected returns are known.
         https://en.wikipedia.org/wiki/Kelly_criterion#Investment_formula
         """
         # parameters from wikipedia page
@@ -175,7 +205,7 @@ class RiskStrategy(Strategy):
 
     def enter_trade(func):
         def execute(self, unix_ts_ns, inputs):
-            # contextual info
+            # unpack inputs
             market_id = inputs["market_id"]
             exchange_name = inputs["exchange_name"]
             quote_currency = inputs["quote_currency"]
@@ -194,22 +224,25 @@ class RiskStrategy(Strategy):
             balance = exchange.get_balance(quote_currency)
 
             # calculate fraction of available balance to use
-            fraction = RiskStrategy.kelly_fraction(confidence_pct,
-                                                   stop_loss_pct,
-                                                   take_profit_pct)
+            fraction = kelly_fraction(
+                confidence_pct,
+                stop_loss_pct,
+                take_profit_pct)
 
             # minimum trade size in quote currency
-            minimum = exchange.get_min_trade_size(base_currency,
-                                                  quote_currency)
+            minimum = exchange.get_min_trade_size(
+                base_currency,
+                quote_currency)
 
             # maximum trade size in quote currency
-            maximum = exchange.get_max_trade_size(base_currency,
-                                                  quote_currency)
+            maximum = exchange.get_max_trade_size(
+                base_currency,
+                quote_currency)
 
             # the fraction of available quote balance to use
             # and the fee for removing that liquidity from the order book
             amount = balance * fraction
-            fee = exchange.get_taker_quoted_fee(amount, quote_currency)
+            fee = exchange.get_taker_quoted_fee(amount)
 
             # need to make sure amount is between min/max bounds
             # and account can cover trade fee (amount + fee)
@@ -228,6 +261,7 @@ class RiskStrategy(Strategy):
                     "price": price,
                     "amount": amount
                 })
+
             else:
                 # amount is too small, too large, or account has
                 # insufficient balance: don't execute the trade
@@ -257,7 +291,8 @@ class RiskStrategy(Strategy):
 
 
 class Queue:
-    """ ...
+    """ Base class for bid and ask queues. The queues are used to queue one or more
+    pending orders to be executed against the order book.
     """
     def __init__(self):
         self._items = []
@@ -273,47 +308,62 @@ class Queue:
 
 
 class BidQueue(Queue):
-    """ ...
-    min heap
+    """ Wraps a min heap queue. Pending orders with the lowest price will be executed
+    first, because the bids side is descending order.
     """
     def __init__(self):
         super().__init__()
 
     def append(self, price, inputs):
-        """ ...
+        """ Append a new event to the queue, ordered by "price".
+        Note: the min heap will order events such that the lowest price comes first.
         """
         key = +price
         heapq.heappush(self._items, (key, inputs))
 
     def pop(self):
-        """ ...
+        """ Pop from the queue returning only the event's inputs.
         """
         _, inputs = heapq.heappop(self._items)
         return inputs
 
 
 class AskQueue(Queue):
-    """ ...
-    max heap
+    """ Wraps a max heap. Pending orders with the highest price will be executed
+    first, because the ask side is ascending order.
     """
     def __init__(self):
         super().__init__()
 
     def append(self, price, inputs):
-        """ ...
+        """ Append a new event to the queue, ordered by "price".
+        Note: the max heap will order events such that the highest price comes first.
         """
         key = -price
         heapq.heappush(self._items, (key, inputs))
 
     def pop(self):
-        """ ...
+        """ Pop from the queue returning only the event's inputs.
         """
         _, inputs = heapq.heappop(self._items)
         return inputs
 
 
 class ExecutionStrategy(Strategy):
-    """ ...
+    """ The execution strategy executes pending orders against the order book.
+    It wraps two queues for taking from the bids side and the asks side.
+
+    Note: this is a base class and is extended by EntryStrategy and ExitStrategy
+    which provide missing handler methods / more specific implementations.
+
+    Note: a "long" takes from the asks side so it will be scheduled on the
+    bids_queue, whilst a "short" takes from the bids side and is scheduled on
+    the asks_queue.
+
+    1)
+    on_best_bid -> trigger_bid_matches
+    2)
+    on_best_ask -> trigger_ask_matches
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
@@ -329,15 +379,18 @@ class ExecutionStrategy(Strategy):
 
         # calculate fee
         fee = exchange.get_taker_quoted_fee(
-            amount, next_order["quote_currency"])
+            amount,
+            next_order["quote_currency"])
 
         # subtract fee from account balance
         exchange.sub_from_balance(
-            next_order["quote_currency"], fee)
+            next_order["quote_currency"],
+            fee)
 
         # add amount to account balance
         exchange.add_to_balance(
-            next_order["base_currency"], amount / best_price)
+            next_order["base_currency"],
+            amount / best_price)
 
         return amount, fee
 
@@ -346,10 +399,10 @@ class ExecutionStrategy(Strategy):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # ...
+            # an order can have multiple fills
             fills = []
-            should_stop = False
 
+            should_stop = False
             while not (self._bid_queue.is_empty() or should_stop):
                 # match against bid queue
                 # ordered by price: lowest -> highest
@@ -361,31 +414,35 @@ class ExecutionStrategy(Strategy):
                     exchange.get_best_bid(next_order["market_id"])
 
                 if best_price >= next_order["price"] and liquidity > 0:
-                    # ...
-                    amount, fee = ExecutionStrategy.match(
-                        exchange, next_order, best_price, liquidity)
+                    # match against the order book
+                    amount, fee = match(
+                        exchange,
+                        next_order,
+                        best_price,
+                        liquidity)
 
                     # subtract amount from remaining
                     next_order["remaining"] -= amount
 
                     # subtract amount from book's available liquidity
                     exchange.remove_bid_liquidity(
-                        next_order["market_id"], amount / best_price)
+                        next_order["market_id"],
+                        amount / best_price)
 
-                    # ...
+                    # log fill event
                     fills.append(("bid_fill", unix_ts_ns, {
                         **next_order,
                         "amount": amount,
                         "fee": fee
                     }))
 
-                    # ...
+                    # the order did not execute in full so add it back to queue
                     if next_order["remaining"] > 0:
                         self._bid_queue.append(
-                            next_order["price"], next_order)
+                            next_order["price"],
+                            next_order)
 
                 else:
-                    # ...
                     should_stop = True
 
             return events + fills
@@ -397,10 +454,10 @@ class ExecutionStrategy(Strategy):
             # call the decorated function
             events = func(self, unix_ts_ns, inputs)
 
-            # ...
+            # an order can have multiple fills
             fills = []
-            should_stop = False
 
+            should_stop = False
             while not (self._ask_queue.is_empty() or should_stop):
                 # match against ask queue
                 # ordered by price: highest -> lowest
@@ -412,31 +469,35 @@ class ExecutionStrategy(Strategy):
                     exchange.get_best_ask(next_order["market_id"])
 
                 if best_price <= next_order["price"] and liquidity > 0:
-                    # ...
-                    amount, fee = ExecutionStrategy.match(
-                        exchange, next_order, best_price, liquidity)
+                    # match against the order book
+                    amount, fee = match(
+                        exchange,
+                        next_order,
+                        best_price,
+                        liquidity)
 
                     # subtract amount from remaining
                     next_order["remaining"] -= amount
 
                     # subtract amount from book's available liquidity
                     exchange.remove_ask_liquidity(
-                        next_order["market_id"], amount / best_price)
+                        next_order["market_id"],
+                        amount / best_price)
 
-                    # ...
+                    # log fill event
                     fills.append(("ask_fill", unix_ts_ns, {
                         **next_order,
                         "amount": amount,
                         "fee": fee
                     }))
 
-                    # ...
+                    # the order did not execute in full so add it back to queue
                     if next_order["remaining"] > 0:
                         self._ask_queue.append(
-                            next_order["price"], next_order)
+                            next_order["price"],
+                            next_order)
 
                 else:
-                    # ...
                     should_stop = True
 
             return events + fills
@@ -453,7 +514,16 @@ class ExecutionStrategy(Strategy):
 
 
 class EntryStrategy(ExecutionStrategy):
-    """ ...
+    """ The entry strategy extends the base execution strategy. It defines handlers
+    for take_from_bids/asks events. The orders are added to the corresponding queues
+    and the matching algorithm is triggered.
+
+    1)
+    on_take_from_bids -> append to bid queue -> trigger bid matches ->
+    entry_bid_queue_append
+    2)
+    on_take_from_asks -> append to ask queue -> trigger ask matches ->
+    entry_ask_queue_append
     """
     @ExecutionStrategy.trigger_bid_matches
     def on_take_from_bids(self, unix_ts_ns, inputs):
@@ -493,7 +563,19 @@ class EntryStrategy(ExecutionStrategy):
 
 
 class PositionStrategy(Strategy):
-    """ ...
+    """ The position strategy keeps track of open long/short positions. A position
+    is uniquely identified by the timestamp it was opened.
+
+    1)
+    on_long_executed -> add long position to self._open_longs -> long_executed
+    2)
+    on_short_executed -> add short position to self._open_shorts -> short_executed
+    3)
+    on_bid_fill -> append fill to position's list of fills -> bid_fill
+    4)
+    on_ask_fill -> append fill to position's list of fills -> ask_fill
+    5)
+    on_mid_market_price -> check if open positions need closing -> mid_market_price
     """
     def __init__(self, exchanges):
         super().__init__(exchanges)
@@ -540,18 +622,17 @@ class PositionStrategy(Strategy):
                 lose_threshold = position["stop_loss_pct_decrease"]
 
                 # use vwap of fills as entry price
-                entry_price = \
-                    PositionStrategy.vwap([(fill["price"], fill["amount"])
-                                           for fill in position["fills"]])
+                entry_price = vwap([(fill["price"], fill["amount"])
+                                    for fill in position["fills"]])
 
                 # calculate price percent change since position opened
                 pct_change = (current_price - entry_price) / entry_price
 
                 # check risk/reward ratio
-                should_close = \
-                    PositionStrategy.should_close(pct_change,
-                                                  win_threshold,
-                                                  lose_threshold)
+                should_close = should_close(
+                        pct_change,
+                        win_threshold,
+                        lose_threshold)
 
                 if should_close:
                     # remove the position from open longs
@@ -575,18 +656,17 @@ class PositionStrategy(Strategy):
                 lose_threshold = position["stop_loss_pct_increase"]
 
                 # use vwap of fills as entry price
-                entry_price = \
-                    PositionStrategy.vwap([(fill["price"], fill["amount"])
-                                           for fill in position["fills"]])
+                entry_price = vwap([(fill["price"], fill["amount"])
+                                    for fill in position["fills"]])
 
                 # calculate price percent change since position opened
                 pct_change = (entry_price - current_price) / entry_price
 
                 # check risk/reward ratio
-                should_close = \
-                    PositionStrategy.should_close(pct_change,
-                                                  win_threshold,
-                                                  lose_threshold)
+                should_close = should_close(
+                    pct_change,
+                    win_threshold,
+                    lose_threshold)
 
                 if should_close:
                     # remove the position from open shorts
@@ -607,7 +687,7 @@ class PositionStrategy(Strategy):
         return check
 
     def on_long_executed(self, unix_ts_ns, inputs):
-        # ...
+        # uniquely identified by the timestamp it was opened
         position_ts = inputs["position_ts"]
 
         # add long to map of open long positions
@@ -624,7 +704,7 @@ class PositionStrategy(Strategy):
         ]
 
     def on_short_executed(self, unix_ts_ns, inputs):
-        # ...
+        # uniquely identified by the timestamp it was opened
         position_ts = inputs["position_ts"]
 
         # add short to map of open short positions
@@ -678,7 +758,16 @@ class PositionStrategy(Strategy):
 
 
 class ExitStrategy(ExecutionStrategy):
-    """ ...
+    """ The exist strategy extends the base execution strategy. It defined handlers
+    for on_give_to_bids/asks events. The orders are orders are added to the corresponding
+    queues and the matching algorithm is triggered.
+
+    1)
+    on_give_to_bids -> append to bid queue -> trigger bid matches ->
+    exit_bid_queue_append
+    2)
+    on_give_to_asks -> append to ask queue -> trigger ask matches ->
+    exit_ask_queue_append
     """
     @ExecutionStrategy.trigger_bid_matches
     def on_give_to_bids(self, unix_ts_ns, inputs):
