@@ -69,21 +69,21 @@ class TestCryptocurrencyExchanges(HelpersTest):
     """ ...
     """
     def test_1(self):
-        # at this point in time there's exactly 12 exchanges
+        # at this point in time there's exactly 11 exchanges
         # that support spot markets
-        exchanges = spot_market_cryptocurrency_exchanges()
-        self.assertTrue(len(exchanges) == 12)
+        exchanges = spot_market_cryptocurrency_exchanges({"GBP": 100, "BTC": 1})
+        self.assertTrue(len(exchanges) == 11)
 
     def test_2(self):
-        # at this point in time there's exactly 7 exchanges
+        # at this point in time there's exactly 6 exchanges
         # that support spot markets
-        exchanges = futures_market_cryptocurrency_exchanges()
-        self.assertTrue(len(exchanges) == 7)
+        exchanges = futures_market_cryptocurrency_exchanges({"GBP": 100, "BTC": 1})
+        self.assertTrue(len(exchanges) == 6)
 
     def test_3(self):
-        # still 12 exchanges in total
-        exchanges = all_cryptocurrency_exchanges()
-        self.assertTrue(len(exchanges) == 11)
+        # 11 + 6 exchanges in total
+        exchanges = all_cryptocurrency_exchanges({"GBP": 100, "BTC": 1})
+        self.assertTrue(len(exchanges) == 17)
 
 
 class TestBuildStrategies(HelpersTest):
@@ -91,20 +91,20 @@ class TestBuildStrategies(HelpersTest):
     """
     def test_1(self):
         # use all exchanges
-        exchanges = all_cryptocurrency_exchanges()
+        exchanges = all_cryptocurrency_exchanges({"GBP": 100, "BTC": 1})
 
         # make the strategy pipeline
         s = build_basic_signal_strategy(TestSignalStrategy, exchanges)
 
         # mock bid events
         bid1 = ("best_bid", 0, {
-            "exchange_name": "COINBASE",
+            "exchange_name": "COINBASE.SPOT",
             "market_id": 1,
             "price": 123,
             "liquidity": 100
         })
         bid2 = ("best_bid", 0, {
-            "exchange_name": "COINBASE",
+            "exchange_name": "COINBASE.SPOT",
             "market_id": 1,
             "price": 122,
             "liquidity": 50
@@ -112,13 +112,13 @@ class TestBuildStrategies(HelpersTest):
 
         # mock ask events
         ask1 = ("best_ask", 1, {
-            "exchange_name": "COINBASE",
+            "exchange_name": "COINBASE.SPOT",
             "market_id": 1,
             "price": 125,
             "liquidity": 1123
         })
         ask2 = ("best_ask", 1, {
-            "exchange_name": "COINBASE",
+            "exchange_name": "COINBASE.SPOT",
             "market_id": 1,
             "price": 128,
             "liquidity": 200

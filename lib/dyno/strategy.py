@@ -224,7 +224,7 @@ class RiskStrategy(Strategy):
             balance = exchange.get_balance(quote_currency)
 
             # calculate fraction of available balance to use
-            fraction = kelly_fraction(
+            fraction = RiskStrategy.kelly_fraction(
                 confidence_pct,
                 stop_loss_pct,
                 take_profit_pct)
@@ -378,9 +378,7 @@ class ExecutionStrategy(Strategy):
             else liquidity * best_price
 
         # calculate fee
-        fee = exchange.get_taker_quoted_fee(
-            amount,
-            next_order["quote_currency"])
+        fee = exchange.get_taker_quoted_fee(amount)
 
         # subtract fee from account balance
         exchange.sub_from_balance(
@@ -415,7 +413,7 @@ class ExecutionStrategy(Strategy):
 
                 if best_price >= next_order["price"] and liquidity > 0:
                     # match against the order book
-                    amount, fee = match(
+                    amount, fee = ExecutionStrategy.match(
                         exchange,
                         next_order,
                         best_price,
@@ -470,7 +468,7 @@ class ExecutionStrategy(Strategy):
 
                 if best_price <= next_order["price"] and liquidity > 0:
                     # match against the order book
-                    amount, fee = match(
+                    amount, fee = ExecutionStrategy.match(
                         exchange,
                         next_order,
                         best_price,
@@ -622,14 +620,15 @@ class PositionStrategy(Strategy):
                 lose_threshold = position["stop_loss_pct_decrease"]
 
                 # use vwap of fills as entry price
-                entry_price = vwap([(fill["price"], fill["amount"])
-                                    for fill in position["fills"]])
+                entry_price = \
+                    PositionStrategy.vwap([(fill["price"], fill["amount"])
+                                           for fill in position["fills"]])
 
                 # calculate price percent change since position opened
                 pct_change = (current_price - entry_price) / entry_price
 
                 # check risk/reward ratio
-                should_close = should_close(
+                should_close = PositionStrategy.should_close(
                         pct_change,
                         win_threshold,
                         lose_threshold)
@@ -656,14 +655,15 @@ class PositionStrategy(Strategy):
                 lose_threshold = position["stop_loss_pct_increase"]
 
                 # use vwap of fills as entry price
-                entry_price = vwap([(fill["price"], fill["amount"])
-                                    for fill in position["fills"]])
+                entry_price = \
+                    PositionStrategy.vwap([(fill["price"], fill["amount"])
+                                           for fill in position["fills"]])
 
                 # calculate price percent change since position opened
                 pct_change = (entry_price - current_price) / entry_price
 
                 # check risk/reward ratio
-                should_close = should_close(
+                should_close = PositionStrategy.should_close(
                     pct_change,
                     win_threshold,
                     lose_threshold)

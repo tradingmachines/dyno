@@ -3,37 +3,37 @@ from . import strategy
 from .backtest import Pipeline
 
 
-def spot_market_cryptocurrency_exchanges():
+def spot_market_cryptocurrency_exchanges(initial_balances):
     return {
-        "BINANCE.SPOT": exchange.Binance(),
-        "BITFINEX.SPOT": exchange.Bitfinex(),
-        "BITFLYER.SPOT": exchange.Bitflyer(),
-        "BITMEX.SPOT": exchange.BitMEX(),
-        "BITSTAMP.SPOT": exchange.Bitstamp(),
-        "BYBIT.SPOT": exchange.Bybit(),
-        "COINBASE.SPOT": exchange.Coinbase(),
-        "GEMINI.SPOT": exchange.Gemini(),
-        "HITBTC.SPOT": exchange.HitBTC(),
-        "KRAKEN.SPOT": exchange.Kraken(),
-        "POLONIEX.SPOT": exchange.Poloniex()
+        "BINANCE.SPOT": exchange.Binance(initial_balances),
+        "BITFINEX.SPOT": exchange.Bitfinex(initial_balances),
+        "BITFLYER.SPOT": exchange.Bitflyer(initial_balances),
+        "BITMEX.SPOT": exchange.BitMEX(initial_balances),
+        "BITSTAMP.SPOT": exchange.Bitstamp(initial_balances),
+        "BYBIT.SPOT": exchange.Bybit(initial_balances),
+        "COINBASE.SPOT": exchange.Coinbase(initial_balances),
+        "GEMINI.SPOT": exchange.Gemini(initial_balances),
+        "HITBTC.SPOT": exchange.HitBTC(initial_balances),
+        "KRAKEN.SPOT": exchange.Kraken(initial_balances),
+        "POLONIEX.SPOT": exchange.Poloniex(initial_balances)
     }
 
 
-def futures_market_cryptocurrency_exchanges():
+def futures_market_cryptocurrency_exchanges(initial_balances):
     return {
-        "BINANCE.FUTURE": exchange.Binance(),
-        "BITFINEX.FUTURE": exchange.Bitfinex(),
-        "BITMEX.FUTURE": exchange.BitMEX(),
-        "BYBIT.FUTURE": exchange.Bybit(),
-        "HITBTC.FUTURE": exchange.HitBTC(),
-        "KRAKEN.FUTURE": exchange.Kraken()
+        "BINANCE.FUTURE": exchange.Binance(initial_balances),
+        "BITFINEX.FUTURE": exchange.Bitfinex(initial_balances),
+        "BITMEX.FUTURE": exchange.BitMEX(initial_balances),
+        "BYBIT.FUTURE": exchange.Bybit(initial_balances),
+        "HITBTC.FUTURE": exchange.HitBTC(initial_balances),
+        "KRAKEN.FUTURE": exchange.Kraken(initial_balances)
     }
 
 
-def all_cryptocurrency_exchanges():
+def all_cryptocurrency_exchanges(initial_balances):
     return {
-        **spot_market_cryptocurrency_exchanges(),
-        **futures_market_cryptocurrency_exchanges()
+        **spot_market_cryptocurrency_exchanges(initial_balances),
+        **futures_market_cryptocurrency_exchanges(initial_balances)
     }
 
 
