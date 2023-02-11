@@ -3,3 +3,55 @@
 #+EMAIL:  w@wsantos.net
 
 dyno example usage and demo programs
+
+* pyspark
+#+BEGIN_SRC python
+  bids = spark \
+    .read.csv("bidPriceChanges.csv", header=True) \
+    .withColumn("side", functions.lit("bids"))
+
+  asks = spark \
+    .read.csv("askPriceChanges.csv", header=True) \
+    .withColumn("side", functions.lit("asks"))
+#+END_SRC
+
+#+BEGIN_SRC python
+  bid_ask = bids.union(asks)
+  bid_ask = bid_ask.sort(bid_ask["unix_ts_ns"], ascending=True)
+  bid_ask.cache()
+#+END_SRC
+
+#+BEGIN_SRC python
+  class Signals(Strategy):
+      def on_mid_market_price(self, unix_ts_ns, inputs):
+	  return [("mid_market_price", unix_ts_ns, inputs)]
+#+END_SRC
+
+#+BEGIN_SRC python
+  class Events:
+      def __init__(self):
+	  self.df = bid_ask.where(bid_ask["market_id"] == 137)
+
+      def pipe(self, pipeline):
+	  def f(x):
+	      inputs = {
+		  "market_id": x.market_id,
+		  "exchange_name": "COINBASE.SPOT",
+		  "price": float(x.price),
+		  "liquidity": float(x.liquidity)
+	      }
+
+	      if x.side == "bids":
+		  return [("best_bid", x.unix_ts_ns, inputs)]
+
+	      elif x.side == "asks":
+		  return [("best_ask", x.unix_ts_ns, inputs)]
+        
+	  return self.df.rdd.map(f).map(pipeline)
+#+END_SRC
+
+#+BEGIN_SRC python
+  exchanges = all_cryptocurrency_exchanges({"GBP": 100, "BTC": 1})
+  pipeline = build_basic_signal_strategy(Signals, exchanges)
+  backtest = Backtest(Events(), pipeline)
+#+END_SRC

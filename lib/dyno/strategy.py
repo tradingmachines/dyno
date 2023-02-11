@@ -609,6 +609,9 @@ class PositionStrategy(Strategy):
 
     def check_open_positions(func):
         def check(self, unix_ts_ns, inputs):
+            # call the decorated function
+            events = func(self, unix_ts_ns, inputs)
+
             # the positions that were successfully closed
             closed_positions = []
 
@@ -682,7 +685,7 @@ class PositionStrategy(Strategy):
                         for fill in position["fills"]
                     ])
 
-            return closed_positions
+            return events + closed_positions
 
         return check
 

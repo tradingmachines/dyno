@@ -1,7 +1,4 @@
-import time
 import functools
-
-from tqdm import tqdm
 from statistics import mean, stdev
 
 
@@ -24,11 +21,6 @@ class Results:
     - max drawdown: x (x%)
 
     * timings
-    ** backtest
-    - start: timestamp
-    - end: timestamp
-    - took: duration
-    ** event time
     - first event: timestamp
     - last event: timestamp
     - timeframe: duration
@@ -58,10 +50,8 @@ class Results:
     - max: x
     ### EXAMPLE REPORT ###
     """
-    def __init__(self, start_ts_ns, end_ts_ns, outputs):
-        self._start_ts_ns = start_ts_ns
-        self._end_ts_ns = end_ts_ns
-        self._outputs = outputs
+    def __init__(self, output):
+        self._output = output
 
     def __str__(self):
         return f"""
@@ -153,16 +143,6 @@ class Results:
         - max drawdown: {self.max_drawdown()} ({self.max_drawdown_pct() * 100}%)
         """
 
-    def backtest_timings(self):
-        """ Return backtest start and end timings and calculate total time took.
-        Note this is not event time i.e. it measures how long the actual backtest took.
-        """
-        return {
-            "start": self._start_ts_ns,
-            "end": self._end_ts_ns,
-            "took": self._start_ts_ns - self._end_ts_ns
-        }
-
     def event_timings(self):
         """ Return timestamps of the first and last events. Also calculate difference
         between them i.e. the timeframe of the data used.
@@ -174,14 +154,8 @@ class Results:
         }
 
     def timings_summary(self):
-        backtest = self.backtest_timings()
         event = self.event_timings()
         return f"""
-        ** backtest
-        - start: {backtest["start"]}
-        - end: {backtest["end"]}
-        - took: {backtest["took"]}
-        ** event time
         - first event: {event["first"]}
         - last event: {event["last"]}
         - timeframe: {event["timeframe"]}
@@ -274,57 +248,32 @@ class Pipeline:
     def __init__(self, *stages):
         self._stages = stages
 
-    def event(self, inputs):
-        """ ...
+    def __call__(self, events):
+        """ Send events down the pipeline.
+
+        1) fold left over list of pipeline stages
+        2) call the stage with the previous stage's output
         """
-        # fold left over list of pipeline stages
-        # do stage will call the stage with the previous stage's output
         foldl = lambda func, acc, xs: functools.reduce(func, xs, acc)
         do_stage = lambda acc, stage: stage(acc)
-
-        # call all stages, using "inputs" as the initial input
-        final_output = foldl(do_stage, inputs, self._stages)
-
-        return final_output
+        return foldl(do_stage, events, self._stages)
 
 
 class Backtest:
     """ A backtest has an events source and a pipeline object. Executing the pipeline
     will consume events from the events source, feeding each event into the pipeline.
     For each event, the output of the pipeline (which is a sequence of stages) is
-    stored in one long "outputs" list. The outputs list is analysed by the Results
-    object.
+    stored in one long "outputs" list.
     """
     def __init__(self, events, pipeline):
         self._events = events
         self._pipeline = pipeline
 
-    def __iter__(self):
-        return map(self._pipeline.event, self._events.as_generator())
-
-    def execute(self, progress_bar=False):
-        """ ...
-        """
-        # system timestamp execute() was called
-        start_ts_ns = time.time_ns()
-
-        if progress_bar:
-            # count number of events, wrap self in tqdm
-            count = sum([1 for _ in self._events.as_generator()])
-            iterator = tqdm(self, total=count, desc="Events")
-
-        else:
-            # just set iterator to self
-            iterator = self
-
-        # create a list from the iterator
-        outputs = [output for output in iterator]
-
-        # system timestamp exeucte() finished
-        end_ts_ns = time.time_ns()
-
-        return Results(start_ts_ns, end_ts_ns, outputs)
-
+    def execute(self):
+        output = self._events.pipe(self._pipeline)
+        flattened = output.flatMap(lambda x: x)
+        return Results(flattened)
+        
 
 class Ensemble:
     """ ...
