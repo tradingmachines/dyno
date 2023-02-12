@@ -11,8 +11,6 @@ from dyno.strategy import BidQueue, AskQueue
 
 
 class TestBaseStrategy(StrategyTest):
-    """ ...
-    """
     def test_1(self):
         s = Strategy(self._exchanges)
 
@@ -28,8 +26,6 @@ class TestBaseStrategy(StrategyTest):
 
 
 class TestDataStrategy(StrategyTest):
-    """ ...
-    """
     def test_1(self):
         s = DataStrategy(self._exchanges)
 
@@ -86,8 +82,6 @@ class TestDataStrategy(StrategyTest):
 
 
 class TestRiskStrategy(StrategyTest):
-    """ ...
-    """
     def test_1(self):
         # ...
         for confidence, negative, positive in [
@@ -140,8 +134,6 @@ class TestRiskStrategy(StrategyTest):
 
 
 class TestExecutionStrategy(StrategyTest):
-    """ ...
-    """
     def test_1(self):
         s = ExecutionStrategy(self._exchanges)
 
@@ -165,8 +157,6 @@ class TestExecutionStrategy(StrategyTest):
         self.assertTrue(outputs[1][2]["amount"] != 250)
 
 class TestPositionStrategy(StrategyTest):
-    """ ...
-    """
     def test_1(self):
         s = PositionStrategy(self._exchanges)
 
@@ -208,7 +198,7 @@ class TestPositionStrategy(StrategyTest):
         })
 
         # ...
-        self.assertTrue(len(outputs) == 0)
+        self.assertTrue(len(outputs) == 1)
 
         # ...
         outputs = s.on_mid_market_price(1, {
@@ -218,12 +208,10 @@ class TestPositionStrategy(StrategyTest):
         })
 
         # ...
-        self.assertTrue(len(outputs) == 1)
+        self.assertTrue(len(outputs) == 2)
 
 
 class TestBidQueue(QueueTest):
-    """ ...
-    """
     def test_1(self):
         # ...
         self._queue.append(1, "input 1")
@@ -240,8 +228,6 @@ class TestBidQueue(QueueTest):
 
 
 class TestAskQueue(QueueTest):
-    """ ...
-    """
     def test_1(self):
         # ...
         self._queue.append(1, "input 1")

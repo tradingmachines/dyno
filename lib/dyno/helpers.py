@@ -37,7 +37,7 @@ def all_cryptocurrency_exchanges(initial_balances):
     }
 
 
-def build_basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
+def build_basic_signal_strategy(users_signal_strategy, exchanges):
     """ Helper function. Build and return a Pipeline object using dyno's pre-defined
     strategy classes. Each strategy object has access to the shared state "exchanges"
     which is assumed to be a dictionary mapping exchange names to exchange objects.
@@ -52,7 +52,7 @@ def build_basic_signal_strategy(UserDefinedSignalStrategy, exchanges):
     6. exit strategy: simulates order execution against the exchange's book
     """
     return Pipeline(strategy.DataStrategy(exchanges),
-                    UserDefinedSignalStrategy(exchanges),
+                    users_signal_strategy,
                     strategy.RiskStrategy(exchanges),
                     strategy.EntryStrategy(exchanges),
                     strategy.PositionStrategy(exchanges),
@@ -229,19 +229,19 @@ class EventTimeWindow:
     chronological order (according to their event timestamps). The difference between
     the first and last event timestamps will always be at most window_duration_seconds.
 
-    - An event is a three-tuple: (event_name, unix_ts_ns, inputs)
+    - An event is a three-tuple: (event_name, unix_ts_ns, values)
     - The window's size is given in seconds: window_duration_seconds
     """
     def __init__(self, window_duration_seconds):
         self._window_duration_secs = window_duration_seconds
         self._circular_queue = CircularQueue()
 
-    def add_event(self, event_name, unix_ts_ns, inputs):
+    def add_event(self, event_name, unix_ts_ns, values):
         """ Append a new event to the window, and remove zero or more events if they
         have expired (trim the underlying circular queue).
         """
         # append to queue
-        self._circular_queue.append((event_name, unix_ts_ns, inputs))
+        self._circular_queue.append((event_name, unix_ts_ns, values))
 
         # remove from tail of queue until difference
         # between head and tail is < self._window_duration_secs
@@ -259,7 +259,7 @@ class EventTimeWindow:
                 oldest = self._circular_queue.get_head()[0]
 
                 # extract event timestamps from
-                # (event_name, unix_ts_ns, inputs)
+                # (event_name, unix_ts_ns, values)
                 newest_ts_ns = newest[1]
                 oldest_ts_ns = oldest[1]
 
@@ -289,10 +289,10 @@ class EventTimeSlidingWindow(EventTimeWindow):
         self._window_step_secs = window_step_seconds
         self._window_start_ts_ns = None
 
-    def add_event(self, event_name, unix_ts_ns, inputs):
+    def add_event(self, event_name, unix_ts_ns, values):
         """ ...
         """
-        super().add_event(event_name, unix_ts_ns, inputs)
+        super().add_event(event_name, unix_ts_ns, values)
 
         if self._window_start_ts_ns == None:
             # no window has started yet

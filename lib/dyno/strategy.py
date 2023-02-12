@@ -8,10 +8,9 @@ class Strategy:
     events, and the output is also a list of events. All strategies have access
     to self._exchanges which is shared state.
 
-    - An event is a three-tuple: (event_name, unix_ts_ns, inputs).
+    - An event is a three-tuple: (event_name, unix_ts_ns, values).
     - A strategy class defines handler functions called on_event_name that
-      receive an event's timestamp and inputs and return a list of new
-      events.
+      receive an event's timestamp and values. It returns a list of new events.
     - If a handler is missing then the input event is simply appended to the
       list of output events i.e. "forwarded".
     """
@@ -21,7 +20,7 @@ class Strategy:
     def __call__(self, events_in):
         events_out = []
 
-        for event_name, unix_ts_ns, inputs in events_in:
+        for event_name, unix_ts_ns, values in events_in:
             # derive the handler's name
             func_name = f"on_{event_name}"
 
@@ -29,20 +28,20 @@ class Strategy:
                 # try to call the input's handler function
                 # append outputs to list of outputs
                 func = getattr(self, func_name)
-                events_out.extend(func(unix_ts_ns, inputs))
+                events_out.extend(func(unix_ts_ns, values))
 
             else:
                 # if no handler then just add the input to
                 # the list of outputs
-                events_out.append((event_name, unix_ts_ns, inputs))
+                events_out.append((event_name, unix_ts_ns, values))
 
         return events_out
 
-    def on_best_bid(self, unix_ts_ns, inputs):
-        return [("best_bid", unix_ts_ns, inputs)]
+    def on_best_bid(self, unix_ts_ns, values):
+        return [("best_bid", unix_ts_ns, values)]
 
-    def on_best_ask(self, unix_ts_ns, inputs):
-        return [("best_ask", unix_ts_ns, inputs)]
+    def on_best_ask(self, unix_ts_ns, values):
+        return [("best_ask", unix_ts_ns, values)]
 
 
 class DataStrategy(Strategy):
@@ -66,13 +65,13 @@ class DataStrategy(Strategy):
         self._prev_mid_market_prices = {}
 
     def mid_market_price_returns(func):
-        def compute(self, unix_ts_ns, inputs):
+        def compute(self, unix_ts_ns, values):
             # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
+            events = func(self, unix_ts_ns, values)
 
-            # unpack inputs
-            exchange_name = inputs["exchange_name"]
-            market_id = inputs["market_id"]
+            # unpack values
+            exchange_name = values["exchange_name"]
+            market_id = values["market_id"]
 
             # get current mid market price
             if market_id in self._curr_mid_market_prices:
@@ -106,13 +105,13 @@ class DataStrategy(Strategy):
         return compute
 
     def mid_market_price(func):
-        def compute(self, unix_ts_ns, inputs):
+        def compute(self, unix_ts_ns, values):
             # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
+            events = func(self, unix_ts_ns, values)
 
-            # unpack inputs
-            market_id = inputs["market_id"]
-            exchange_name = inputs["exchange_name"]
+            # unpack values
+            market_id = values["market_id"]
+            exchange_name = values["exchange_name"]
 
             # get exchange object
             exchange = self._exchanges[exchange_name]
@@ -154,29 +153,29 @@ class DataStrategy(Strategy):
 
     @mid_market_price_returns
     @mid_market_price
-    def on_best_bid(self, unix_ts_ns, inputs):
-        exchange = self._exchanges[inputs["exchange_name"]]
+    def on_best_bid(self, unix_ts_ns, values):
+        exchange = self._exchanges[values["exchange_name"]]
 
         # set the best bid price and current liquidity
         # on exchange for given market id
-        exchange.set_best_bid(inputs["market_id"],
-                              inputs["price"],
-                              inputs["liquidity"])
+        exchange.set_best_bid(values["market_id"],
+                              values["price"],
+                              values["liquidity"])
 
-        return super().on_best_bid(unix_ts_ns, inputs)
+        return super().on_best_bid(unix_ts_ns, values)
 
     @mid_market_price_returns
     @mid_market_price
-    def on_best_ask(self, unix_ts_ns, inputs):
-        exchange = self._exchanges[inputs["exchange_name"]]
+    def on_best_ask(self, unix_ts_ns, values):
+        exchange = self._exchanges[values["exchange_name"]]
 
         # set the best ask price and current liquidity
         # on exchange for given market id
-        exchange.set_best_ask(inputs["market_id"],
-                              inputs["price"],
-                              inputs["liquidity"])
+        exchange.set_best_ask(values["market_id"],
+                              values["price"],
+                              values["liquidity"])
 
-        return super().on_best_ask(unix_ts_ns, inputs)
+        return super().on_best_ask(unix_ts_ns, values)
 
 
 class RiskStrategy(Strategy):
@@ -204,20 +203,20 @@ class RiskStrategy(Strategy):
         return f / 100
 
     def enter_trade(func):
-        def execute(self, unix_ts_ns, inputs):
-            # unpack inputs
-            market_id = inputs["market_id"]
-            exchange_name = inputs["exchange_name"]
-            quote_currency = inputs["quote_currency"]
-            base_currency = inputs["base_currency"]
+        def execute(self, unix_ts_ns, values):
+            # unpack values
+            market_id = values["market_id"]
+            exchange_name = values["exchange_name"]
+            quote_currency = values["quote_currency"]
+            base_currency = values["base_currency"]
 
             # risk parameters
-            confidence_pct = inputs["confidence_pct"]
-            stop_loss_pct = inputs["stop_loss_pct"]
-            take_profit_pct = inputs["take_profit_pct"]
+            confidence_pct = values["confidence_pct"]
+            stop_loss_pct = values["stop_loss_pct"]
+            take_profit_pct = values["take_profit_pct"]
 
             # the entry price
-            price = inputs["price"]
+            price = values["price"]
 
             # get balance of quote currency
             exchange = self._exchanges[exchange_name]
@@ -270,23 +269,23 @@ class RiskStrategy(Strategy):
         return execute
 
     @enter_trade
-    def on_long(self, unix_ts_ns, inputs):
+    def on_long(self, unix_ts_ns, values):
         return [
-            # the original long event + its inputs
-            ("long_executed", unix_ts_ns, inputs),
+            # the original long event + its values
+            ("long_executed", unix_ts_ns, values),
 
             # return event: take from ask side of the order book
-            ("take_from_asks", unix_ts_ns, inputs)
+            ("take_from_asks", unix_ts_ns, values)
         ]
 
     @enter_trade
-    def on_short(self, unix_ts_ns, inputs):
+    def on_short(self, unix_ts_ns, values):
         return [
-            # the original short event + its inputs
-            ("short_executed", unix_ts_ns, inputs),
+            # the original short event + its values
+            ("short_executed", unix_ts_ns, values),
 
             # return event: take from bid side of the order book
-            ("take_from_bids", unix_ts_ns, inputs)
+            ("take_from_bids", unix_ts_ns, values)
         ]
 
 
@@ -314,18 +313,18 @@ class BidQueue(Queue):
     def __init__(self):
         super().__init__()
 
-    def append(self, price, inputs):
+    def append(self, price, values):
         """ Append a new event to the queue, ordered by "price".
         Note: the min heap will order events such that the lowest price comes first.
         """
         key = +price
-        heapq.heappush(self._items, (key, inputs))
+        heapq.heappush(self._items, (key, values))
 
     def pop(self):
-        """ Pop from the queue returning only the event's inputs.
+        """ Pop from the queue returning only the event's values.
         """
-        _, inputs = heapq.heappop(self._items)
-        return inputs
+        _, values = heapq.heappop(self._items)
+        return values
 
 
 class AskQueue(Queue):
@@ -335,18 +334,18 @@ class AskQueue(Queue):
     def __init__(self):
         super().__init__()
 
-    def append(self, price, inputs):
+    def append(self, price, values):
         """ Append a new event to the queue, ordered by "price".
         Note: the max heap will order events such that the highest price comes first.
         """
         key = -price
-        heapq.heappush(self._items, (key, inputs))
+        heapq.heappush(self._items, (key, values))
 
     def pop(self):
-        """ Pop from the queue returning only the event's inputs.
+        """ Pop from the queue returning only the event's values.
         """
-        _, inputs = heapq.heappop(self._items)
-        return inputs
+        _, values = heapq.heappop(self._items)
+        return values
 
 
 class ExecutionStrategy(Strategy):
@@ -393,9 +392,9 @@ class ExecutionStrategy(Strategy):
         return amount, fee
 
     def trigger_bid_matches(func):
-        def do_matches(self, unix_ts_ns, inputs):
+        def do_matches(self, unix_ts_ns, values):
             # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
+            events = func(self, unix_ts_ns, values)
 
             # an order can have multiple fills
             fills = []
@@ -448,9 +447,9 @@ class ExecutionStrategy(Strategy):
         return do_matches
 
     def trigger_ask_matches(func):
-        def do_matches(self, unix_ts_ns, inputs):
+        def do_matches(self, unix_ts_ns, values):
             # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
+            events = func(self, unix_ts_ns, values)
 
             # an order can have multiple fills
             fills = []
@@ -503,12 +502,12 @@ class ExecutionStrategy(Strategy):
         return do_matches
 
     @trigger_bid_matches
-    def on_best_bid(self, unix_ts_ns, inputs):
-        return super().on_best_bid(unix_ts_ns, inputs)
+    def on_best_bid(self, unix_ts_ns, values):
+        return super().on_best_bid(unix_ts_ns, values)
 
     @trigger_ask_matches
-    def on_best_ask(self, unix_ts_ns, inputs):
-        return super().on_best_ask(unix_ts_ns, inputs)
+    def on_best_ask(self, unix_ts_ns, values):
+        return super().on_best_ask(unix_ts_ns, values)
 
 
 class EntryStrategy(ExecutionStrategy):
@@ -524,38 +523,38 @@ class EntryStrategy(ExecutionStrategy):
     entry_ask_queue_append
     """
     @ExecutionStrategy.trigger_bid_matches
-    def on_take_from_bids(self, unix_ts_ns, inputs):
+    def on_take_from_bids(self, unix_ts_ns, values):
         # take from bids by appending to bid queue
         self._bid_queue.append(
-            inputs["price"],
+            values["price"],
             {
-                **inputs,
-                "remaining": inputs["amount"]
+                **values,
+                "remaining": values["amount"]
             }
         )
 
         return [
             ("entry_bid_queue_append", unix_ts_ns, {
-                **inputs,
-                "initial_amount": inputs["amount"]
+                **values,
+                "initial_amount": values["amount"]
             })
         ]
 
     @ExecutionStrategy.trigger_ask_matches
-    def on_take_from_asks(self, unix_ts_ns, inputs):
+    def on_take_from_asks(self, unix_ts_ns, values):
         # take from asks by appending to ask queue
         self._ask_queue.append(
-            inputs["price"],
+            values["price"],
             {
-                **inputs,
-                "remaining": inputs["amount"]
+                **values,
+                "remaining": values["amount"]
             }
         )
 
         return [
             ("entry_ask_queue_append", unix_ts_ns, {
-                **inputs,
-                "initial_amount": inputs["amount"]
+                **values,
+                "initial_amount": values["amount"]
             })
         ]
 
@@ -608,9 +607,9 @@ class PositionStrategy(Strategy):
             return False
 
     def check_open_positions(func):
-        def check(self, unix_ts_ns, inputs):
+        def check(self, unix_ts_ns, values):
             # call the decorated function
-            events = func(self, unix_ts_ns, inputs)
+            events = func(self, unix_ts_ns, values)
 
             # the positions that were successfully closed
             closed_positions = []
@@ -618,7 +617,7 @@ class PositionStrategy(Strategy):
             # consider open long positions
             for ts, position in list(self._open_longs.items()):
                 # extract position data
-                current_price = inputs["mid_market_price"]
+                current_price = values["mid_market_price"]
                 win_threshold = position["take_profit_pct_increase"]
                 lose_threshold = position["stop_loss_pct_decrease"]
 
@@ -653,7 +652,7 @@ class PositionStrategy(Strategy):
             # consider open short positions
             for ts, position in list(self._open_shorts.items()):
                 # extract position data
-                current_price = inputs["mid_market_price"]
+                current_price = values["mid_market_price"]
                 win_threshold = position["take_profit_pct_decrease"]
                 lose_threshold = position["stop_loss_pct_increase"]
 
@@ -689,74 +688,74 @@ class PositionStrategy(Strategy):
 
         return check
 
-    def on_long_executed(self, unix_ts_ns, inputs):
+    def on_long_executed(self, unix_ts_ns, values):
         # uniquely identified by the timestamp it was opened
-        position_ts = inputs["position_ts"]
+        position_ts = values["position_ts"]
 
         # add long to map of open long positions
         # mapping current unix time -> position data
         self._open_longs[position_ts] = {
-            **inputs,
+            **values,
             "fills": [],
-            "stop_loss_pct_decrease": inputs["stop_loss_pct"],
-            "take_profit_pct_increase": inputs["take_profit_pct"]
+            "stop_loss_pct_decrease": values["stop_loss_pct"],
+            "take_profit_pct_increase": values["take_profit_pct"]
         }
 
         return [
-            ("long_executed", unix_ts_ns, inputs)
+            ("long_executed", unix_ts_ns, values)
         ]
 
-    def on_short_executed(self, unix_ts_ns, inputs):
+    def on_short_executed(self, unix_ts_ns, values):
         # uniquely identified by the timestamp it was opened
-        position_ts = inputs["position_ts"]
+        position_ts = values["position_ts"]
 
         # add short to map of open short positions
         # mapping current unix time -> position data
         self._open_shorts[position_ts] = {
-            **inputs,
+            **values,
             "fills": [],
-            "stop_loss_pct_increase": inputs["stop_loss_pct"],
-            "take_profit_pct_decrease": inputs["take_profit_pct"]
+            "stop_loss_pct_increase": values["stop_loss_pct"],
+            "take_profit_pct_decrease": values["take_profit_pct"]
         }
 
         return [
-            ("short_executed", unix_ts_ns, inputs)
+            ("short_executed", unix_ts_ns, values)
         ]
 
-    def on_bid_fill(self, unix_ts_ns, inputs):
+    def on_bid_fill(self, unix_ts_ns, values):
         # get position's fills
-        ts = inputs["position_ts"]
+        ts = values["position_ts"]
         fills = self._open_shorts[ts]["fills"]
 
         # append to position's fills
         fills.append({
-            "price": inputs["price"],
-            "amount": inputs["amount"]
+            "price": values["price"],
+            "amount": values["amount"]
         })
 
         return [
-            ("bid_fill", unix_ts_ns, inputs)
+            ("bid_fill", unix_ts_ns, values)
         ]
 
-    def on_ask_fill(self, unix_ts_ns, inputs):
+    def on_ask_fill(self, unix_ts_ns, values):
         # get position's fills
-        ts = inputs["position_ts"]
+        ts = values["position_ts"]
         fills = self._open_longs[ts]["fills"]
 
         # append to position's fills
         fills.append({
-            "price": inputs["price"],
-            "amount": inputs["amount"]
+            "price": values["price"],
+            "amount": values["amount"]
         })
 
         return [
-            ("ask_fill", unix_ts_ns, inputs)
+            ("ask_fill", unix_ts_ns, values)
         ]
 
     @check_open_positions
-    def on_mid_market_price(self, unix_ts_ns, inputs):
+    def on_mid_market_price(self, unix_ts_ns, values):
         return [
-            ("mid_market_price", unix_ts_ns, inputs)
+            ("mid_market_price", unix_ts_ns, values)
         ]
 
 
@@ -773,31 +772,31 @@ class ExitStrategy(ExecutionStrategy):
     exit_ask_queue_append
     """
     @ExecutionStrategy.trigger_bid_matches
-    def on_give_to_bids(self, unix_ts_ns, inputs):
+    def on_give_to_bids(self, unix_ts_ns, values):
         # give to bids by appending to bids queue
         self._bid_queue.append({
-            **inputs,
-            "remaining": inputs["amount"]
+            **values,
+            "remaining": values["amount"]
         })
 
         return [
             ("exit_bid_queue_append", unix_ts_ns, {
-                **inputs,
-                "initial_amount": inputs["amount"]
+                **values,
+                "initial_amount": values["amount"]
             })
         ]
 
     @ExecutionStrategy.trigger_ask_matches
-    def on_give_to_asks(self, unix_ts_ns, inputs):
+    def on_give_to_asks(self, unix_ts_ns, values):
         # give to asks by appending to asks queue
         self._ask_queue.append({
-            **inputs,
-            "remaining": inputs["amount"]
+            **values,
+            "remaining": values["amount"]
         })
 
         return [
             ("exit_ask_queue_append", unix_ts_ns, {
-                **inputs,
-                "initial_amount": inputs["amount"]
+                **values,
+                "initial_amount": values["amount"]
             })
         ]

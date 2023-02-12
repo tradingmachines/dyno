@@ -4,8 +4,6 @@ from dyno.exchange import Exchange, OrderBook, MakerTakerFeeSchedule
 
 
 class TestExchange1(Exchange):
-    """ ...
-    """
     def __init__(self, initial_balances):
         super().__init__(name="EXCHANGE 1",
                          initial_balances=initial_balances,
@@ -25,8 +23,6 @@ class TestExchange1(Exchange):
 
 
 class TestExchange2(Exchange):
-    """ ...
-    """
     def __init__(self, initial_balances):
         super().__init__(name="EXCHANGE 2",
                          initial_balances=initial_balances,
@@ -46,8 +42,6 @@ class TestExchange2(Exchange):
 
 
 class StrategyTest(unittest.TestCase):
-    """ ...
-    """
     def setUp(self):
         # ...
         initial_balances = {
@@ -63,7 +57,5 @@ class StrategyTest(unittest.TestCase):
 
 
 class QueueTest(unittest.TestCase):
-    """ ...
-    """
     def setUp(self, QueueClass):
         self._queue = QueueClass()

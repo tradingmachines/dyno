@@ -4,18 +4,14 @@ from dyno.backtest import Results
 
 
 class TestResults(ClientTest):
-    """ ...
-    """
     def test_1(self):
-        r = Results(0, 1, [])
+        r = Results([])
 
         # not finished
         # ...
 
 
 class TestPipeline(ClientTest):
-    """ ...
-    """
     def test_1(self):
 
         # not finished
@@ -25,8 +21,6 @@ class TestPipeline(ClientTest):
 
 
 class TestBacktest(ClientTest):
-    """ ...
-    """
     def test_1(self):
 
         # not finished
@@ -36,8 +30,6 @@ class TestBacktest(ClientTest):
 
 
 class TestEnsemble(ClientTest):
-    """ ...
-    """
     def test_1(self):
 
         # not finished

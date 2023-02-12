@@ -4,8 +4,6 @@ from dyno.strategy import Strategy
 
 
 class TestSignalStrategy(Strategy):
-    """ ...
-    """
     def __init__(self, exchanges, random_seed=19101999):
         super().__init__(exchanges)
         self._random_seed = random_seed
@@ -40,8 +38,6 @@ class TestSignalStrategy(Strategy):
 
 
 class ClientTest(unittest.TestCase):
-    """ ...
-    """
     def setUp(self):
         pass
 

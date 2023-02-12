@@ -50,8 +50,8 @@ class Results:
     - max: x
     ### EXAMPLE REPORT ###
     """
-    def __init__(self, output):
-        self._output = output
+    def __init__(self, rdd):
+        self._rdd = rdd
 
     def __str__(self):
         return f"""
@@ -222,7 +222,15 @@ class Results:
     def plot(self):
         """ ...
         """
-        return
+
+        def f(x):
+            pass
+
+        plt.figure(figsize=(16, 10), dpi=80)
+
+        plt.plot(mid_price, color="blue")
+        plt.scatter(longs, color="green")
+        plt.scatter(shorts, color="red")
 
     def plot_equity_curve(self):
         """ ...
@@ -270,9 +278,8 @@ class Backtest:
         self._pipeline = pipeline
 
     def execute(self):
-        output = self._events.pipe(self._pipeline)
-        flattened = output.flatMap(lambda x: x)
-        return Results(flattened)
+        rdd = self._events.pipe(self._pipeline).cache()
+        return Results(rdd)
         
 
 class Ensemble:
@@ -294,4 +301,4 @@ class Ensemble:
         # how to extract summary statistics from all results?
         # ...
 
-        return
+        pass

@@ -13,8 +13,6 @@ from dyno.helpers import EventTimeWindow, EventTimeSlidingWindow
 
 
 class TestSignalStrategy(Strategy):
-    """ ...
-    """
     def __init__(self, exchanges):
         super().__init__(exchanges)
         self._rand = random.Random(12345)
@@ -66,8 +64,6 @@ class TestSignalStrategy(Strategy):
 
 
 class TestCryptocurrencyExchanges(HelpersTest):
-    """ ...
-    """
     def test_1(self):
         # at this point in time there's exactly 11 exchanges
         # that support spot markets
@@ -87,14 +83,12 @@ class TestCryptocurrencyExchanges(HelpersTest):
 
 
 class TestBuildStrategies(HelpersTest):
-    """ ...
-    """
     def test_1(self):
         # use all exchanges
         exchanges = all_cryptocurrency_exchanges({"GBP": 100, "BTC": 1})
 
         # make the strategy pipeline
-        s = build_basic_signal_strategy(TestSignalStrategy, exchanges)
+        s = build_basic_signal_strategy(TestSignalStrategy(exchanges), exchanges)
 
         # mock bid events
         bid1 = ("best_bid", 0, {
@@ -125,15 +119,13 @@ class TestBuildStrategies(HelpersTest):
         })
 
         # send the first pair of events
-        print(s.event([bid1, ask1]))
+        print(s([bid1, ask1]))
 
         # send the second pair of events
-        print(s.event([bid2, ask2]))
+        print(s([bid2, ask2]))
 
 
 class TestCircularQueue(HelpersTest):
-    """ ...
-    """
     def test_1(self):
         q = CircularQueue()
 
@@ -250,8 +242,6 @@ class TestCircularQueue(HelpersTest):
 
 
 class TestEventTimeWindow(HelpersTest):
-    """ ...
-    """
     def test_1(self):
         w = EventTimeWindow(window_duration_seconds=60)
 
@@ -287,8 +277,6 @@ class TestEventTimeWindow(HelpersTest):
 
 
 class TestEventTimeSlidingWindow(HelpersTest):
-    """ ...
-    """
     def test_1(self):
         w = EventTimeSlidingWindow(
             window_duration_seconds=60,
