@@ -252,12 +252,8 @@ class RiskStrategy(Strategy):
                 # the amount is between the min/max bounds
                 # call and return the decorated function
                 return func(self, unix_ts_ns, {
+                    **values,
                     "position_ts": unix_ts_ns,
-                    "market_id": market_id,
-                    "exchange_name": exchange_name,
-                    "base_currency": base_currency,
-                    "quote_currency": quote_currency,
-                    "price": price,
                     "amount": amount
                 })
 
@@ -627,7 +623,8 @@ class PositionStrategy(Strategy):
                                            for fill in position["fills"]])
 
                 # calculate price percent change since position opened
-                pct_change = (current_price - entry_price) / entry_price
+                pct_change = (entry_price - current_price) / entry_price \
+                    if entry_price > 0 else 0
 
                 # check risk/reward ratio
                 should_close = PositionStrategy.should_close(
@@ -662,7 +659,8 @@ class PositionStrategy(Strategy):
                                            for fill in position["fills"]])
 
                 # calculate price percent change since position opened
-                pct_change = (entry_price - current_price) / entry_price
+                pct_change = (entry_price - current_price) / entry_price \
+                    if entry_price > 0 else 0
 
                 # check risk/reward ratio
                 should_close = PositionStrategy.should_close(

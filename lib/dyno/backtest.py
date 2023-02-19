@@ -224,7 +224,14 @@ class Results:
         """
 
         def f(x):
-            pass
+
+            for name, unix_ts_ns, values in x:
+                if name in []:
+                    return
+                else:
+                    return
+
+            return
 
         plt.figure(figsize=(16, 10), dpi=80)
 

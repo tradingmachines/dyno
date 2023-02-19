@@ -17,13 +17,13 @@ class TestSignalStrategy(Strategy):
         super().__init__(exchanges)
         self._rand = random.Random(12345)
 
-    def on_mid_market_price_returns(self, unix_ts_ns, inputs):
+    def on_mid_market_price_returns(self, unix_ts_ns, values):
         # uniform pick from {1 2 3 4 5 6 7 8 9}
         rand = self._rand.randint(1, 9)
 
         # contextual info
-        market_id = inputs["market_id"]
-        exchange_name = inputs["exchange_name"]
+        market_id = values["market_id"]
+        exchange_name = values["exchange_name"]
         exchange = self._exchanges[exchange_name]
 
         if rand in [1, 2, 3]:

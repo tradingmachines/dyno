@@ -267,10 +267,10 @@ class Binance(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -284,10 +284,10 @@ class Bitfinex(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -301,10 +301,10 @@ class Bitflyer(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -318,10 +318,10 @@ class BitMEX(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -335,10 +335,10 @@ class Bitstamp(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -352,10 +352,10 @@ class Bybit(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -369,10 +369,10 @@ class Coinbase(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -386,10 +386,10 @@ class Gemini(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -403,10 +403,10 @@ class HitBTC(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -420,10 +420,10 @@ class Kraken(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
 
@@ -437,9 +437,9 @@ class Poloniex(Exchange):
                          fee_schedule=MakerTakerFeeSchedule(0.01, 0.01),
                          size_limits={
                              "BTC": {
-                                 "GBP": {"minimum": 25, "maximum": 350},
-                                 "EUR": {"minimum": 25, "maximum": 350},
-                                 "USD": {"minimum": 25, "maximum": 350},
-                                 "USDT": {"minimum": 25, "maximum": 350}
+                                 "GBP": {"minimum": 25, "maximum": 100000},
+                                 "EUR": {"minimum": 25, "maximum": 100000},
+                                 "USD": {"minimum": 25, "maximum": 100000},
+                                 "USDT": {"minimum": 25, "maximum": 100000}
                              }
                          })
