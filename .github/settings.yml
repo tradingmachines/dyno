@@ -1,6 +1,6 @@
 repository:
   name: "dyno"
-  description: "Backtesting framework for high-frequency trading strategies"
+  description: "🚀 (work in progress) Backtesting framework for high-frequency trading strategies. Built on PySpark"
   private: false
   has_issues: true
   has_projects: false
